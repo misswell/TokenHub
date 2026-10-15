@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-const dopBatchLimit = 1000
+const dopBatchLimit = 12000
 
 // DOPBatchHandler opts into the additive DOP API. The original Handler and its
 // routes remain untouched. Call once at startup, before accepting requests.
@@ -119,7 +119,7 @@ func (api *dopBatchAPI) serveHTTP(w http.ResponseWriter, r *http.Request) {
 
 func validateDOPBatchItems(items []dopBatchItem) error {
 	if len(items) == 0 || len(items) > dopBatchLimit {
-		return NewHTTPError(400, "invalid_batch_size", "items must contain 1 to 1000 entries")
+		return NewHTTPError(400, "invalid_batch_size", "items must contain 1 to 12000 entries")
 	}
 	refs := make(map[string]bool, len(items))
 	for _, item := range items {

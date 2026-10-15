@@ -33,7 +33,7 @@ func (api *dopBatchAPI) serveUsage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if len(request.Users) == 0 || len(request.Users) > dopBatchLimit {
-		writeError(w, r, NewHTTPError(400, "invalid_batch_size", "users must contain 1 to 1000 entries"))
+		writeError(w, r, NewHTTPError(400, "invalid_batch_size", "users must contain 1 to 12000 entries"))
 		return
 	}
 	seen := make(map[string]bool, len(request.Users))

@@ -11,7 +11,7 @@ go run ./cmd/tokenhub-dop
 ビルド例：
 
 ```sh
-go build -ldflags "-X main.buildVersion=0.9.1" -o ../.artifacts/tokenhub-dop ./cmd/tokenhub-dop
+go build -ldflags "-X main.buildVersion=0.9.2" -o ../.artifacts/tokenhub-dop ./cmd/tokenhub-dop
 ```
 
 追加エントリーポイントは起動検証、移行/ロールバック保護、初期化、DB CLI、カタログと課金処理、正常終了を維持し、構成時のみ `Server.DOPBatchHandler()` を呼び出します。既存の入口、`Server.Handler()`、ルート、モデル、環境テンプレート、フロントエンドは変更しません。上流の起動処理が変わると入口整合テストが失敗するため、追加ファイルを同期してください。テキスト競合がなくてもアップグレード後の互換性確認は必要です。
@@ -24,7 +24,7 @@ go build -ldflags "-X main.buildVersion=0.9.1" -o ../.artifacts/tokenhub-dop ./c
 
 ネイティブの `admin` / `system_admin` のみ利用でき、`Authorization: Bearer <PLATFORM_ADMIN_TOKEN>` または同等の管理者セッションが必要です。一般ユーザー、Team Leader、security_admin、分析トークン、モデルKeyは利用できません。DOPは実際の操作者の組織権限を別途検証し、認証情報をブラウザーに渡さないでください。
 
-1リクエストは1～1000件で、既存のJSONバイト上限も適用します。1万人は10バッチなどに分けて並列数を制限してください。書き込みはサーバー内で各リソースを処理し、単一SQLや全員同時反映を保証しません。用量読み取りは集合SQLで、Userの持続カウンターと過去のKey帰属集計の最大値を使用し、二重加算を避けます。
+1リクエストは1～12000件で、既存のJSONバイト上限も適用します。最大12000人を一括送信できます。既存のJSON上限は既定8 MiBです。大きな項目は既存 TOKENHUB_MAX_JSON_REQUEST_BYTES とプロキシ/クライアント上限の調整が必要です。書き込みはサーバー内で各リソースを処理し、単一SQLや全員同時反映を保証しません。書き込み時は対象ユーザー/ポリシーだけを読み取り、全表の反復取得を避けます。用量読み取りは集合SQLで、Userの持続カウンターと過去のKey帰属集計の最大値を使用し、二重加算を避けます。
 
 各項目の変更、承認、暗号化した再実行結果を同一トランザクションで保存します。失敗項目のみロールバックし、項目間の原子性はありません。全件成功はHTTP200、失敗または承認待ちは207です。`data[]` は入力順で、`client_ref`、`status`、`state`、`replayed`、`body` を含みます。202/pendingは未反映の承認待ちです。
 
@@ -56,7 +56,7 @@ Content-Type: application/json
 }
 ```
 
-`users` contains 1–1000 unique IDs, each at most 256 characters. `monthly_limit_usd` is optional, finite and nonnegative: supply the DOP target converted to USD. It is used only to compute `max(0, target - used)` and is **never persisted or inferred from a TokenHub wallet**. Omission means that both limit and remaining fields are omitted. Each result includes `user_id`, `status`, `current_usage.daily/monthly` (requests, prompt/completion/total tokens, cost_usd), and optional `monthly_limit_usd` / `remaining_usd`. Top-level `periods.day/month`, `as_of` and `currency=USD` describe the native quota period and read start time. Missing users have status 404; an existing user with no counters has zero use. Database errors fail the request instead of returning false zeroes. This reads all owned-Key attribution, not only one Project or current Key. It returns the requested users in input order; there is no cursor or hidden second page.
+`users` contains 1–12000 unique IDs, each at most 256 characters. `monthly_limit_usd` is optional, finite and nonnegative: supply the DOP target converted to USD. It is used only to compute `max(0, target - used)` and is **never persisted or inferred from a TokenHub wallet**. Omission means that both limit and remaining fields are omitted. Each result includes `user_id`, `status`, `current_usage.daily/monthly` (requests, prompt/completion/total tokens, cost_usd), and optional `monthly_limit_usd` / `remaining_usd`. Top-level `periods.day/month`, `as_of` and `currency=USD` describe the native quota period and read start time. Missing users have status 404; an existing user with no counters has zero use. Database errors fail the request instead of returning false zeroes. This reads all owned-Key attribution, not only one Project or current Key. It returns the requested users in input order; there is no cursor or hidden second page.
 
 ```http
 POST http://localhost:8080/api/admin/dop/batch/user-quotas HTTP/1.1

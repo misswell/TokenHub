@@ -11,7 +11,7 @@ go run ./cmd/tokenhub-dop
 构建独立入口：
 
 ```sh
-go build -ldflags "-X main.buildVersion=0.9.1" -o ../.artifacts/tokenhub-dop ./cmd/tokenhub-dop
+go build -ldflags "-X main.buildVersion=0.9.2" -o ../.artifacts/tokenhub-dop ./cmd/tokenhub-dop
 ```
 
 新增入口保留原版启动校验、迁移/回滚保护、初始化、数据库 CLI、目录与账单任务、优雅退出，仅在组装时调用 `Server.DOPBatchHandler()`。原入口、`Server.Handler()`、路由、原有模型、环境模板和前端文件均不修改，原接口继续可用。入口对齐测试会在上游启动流程变化时失败，届时只同步新增入口。仅新增文件可以避免文本冲突，但升级后仍须验证兼容性。
@@ -33,7 +33,7 @@ go build -ldflags "-X main.buildVersion=0.9.1" -o ../.artifacts/tokenhub-dop ./c
 
 仅原生 `admin` / `system_admin` 可调用，认证位置为 `Authorization: Bearer <PLATFORM_ADMIN_TOKEN>`，也接受同等平台管理员会话。普通员工、Team Leader、安全管理员、分析 Token 和模型 Key 均不能使用。DOP 自行校验实际操作人员的权限和组织范围；原生审计记录的是平台身份。后台凭证不交给浏览器。
 
-每批 **1～1000 项**，并受原有 JSON 请求体大小限制。一万人可拆成十批、控制并发；不承诺全部人员同时生效。批量写入在服务端逐项复用原接口逻辑，减少 HTTP 请求，不宣称所有变更合并成一条 SQL。人员用量查询使用集合 SQL，查询次数不随人员数线性增长，按原生逻辑取 User 持久计数与 Key 历史归因汇总的最大值，避免重复累计。
+每批 **1～12000 项**，并受原有 JSON 请求体大小限制。最多12000人可以一次提交；原有请求体默认上限仍为8 MiB，字段较大时需配置现有 TOKENHUB_MAX_JSON_REQUEST_BYTES，并同步代理/客户端限制。不承诺全部人员同时生效。批量写入在服务端逐项复用原接口逻辑，减少 HTTP 请求，不宣称所有变更合并成一条 SQL。写入时只读取当前项的目标人员/策略，避免逐项重复拉取整表。人员用量查询使用集合 SQL，查询次数不随人员数线性增长，按原生逻辑取 User 持久计数与 Key 历史归因汇总的最大值，避免重复累计。
 
 每项的变更/审批和加密重放记录在同一事务中提交，失败只回滚该项，不是跨人员事务。HTTP 200 表示全部成功；207 表示存在失败或待审批项。返回 `data[]` 与输入顺序一致，含 `client_ref`、原生状态码 `status`、`state`（succeeded/pending/failed）、`replayed`、原生结果或错误 `body`。202/pending 只表示等待审批，不能标记为已生效。权限/外层参数错误可直接拒绝整批。
 
@@ -67,7 +67,7 @@ Content-Type: application/json
 }
 ```
 
-`users` 为1～1000个不重复的用户，ID 最长256字符。可选 `monthly_limit_usd` 为 DOP 设置额换算后的有限非负 USD，仅计算 `max(0, 设置额 − 已用)`，**不会落库，也不会读取或推断钱包余额**；不传则不返回设置额/余量字段。每项返回 `user_id`、`status`、`current_usage.daily/monthly`（请求数、输入/输出/总 Token 数、cost_usd），以及可选 `monthly_limit_usd`、`remaining_usd`。顶层 `periods.day/month`、`as_of`、`currency=USD` 给出原生周期及读取起始时点。用户不存在时该项404，存在但无计数时已用为0；数据库失败直接报错，不补假零。按员工所有 Key 的历史归因统计，非单项目或当前 Key。按输入顺序一次返回所请求集合，不需游标分页。
+`users` 为1～12000个不重复的用户，ID 最长256字符。可选 `monthly_limit_usd` 为 DOP 设置额换算后的有限非负 USD，仅计算 `max(0, 设置额 − 已用)`，**不会落库，也不会读取或推断钱包余额**；不传则不返回设置额/余量字段。每项返回 `user_id`、`status`、`current_usage.daily/monthly`（请求数、输入/输出/总 Token 数、cost_usd），以及可选 `monthly_limit_usd`、`remaining_usd`。顶层 `periods.day/month`、`as_of`、`currency=USD` 给出原生周期及读取起始时点。用户不存在时该项404，存在但无计数时已用为0；数据库失败直接报错，不补假零。按员工所有 Key 的历史归因统计，非单项目或当前 Key。按输入顺序一次返回所请求集合，不需游标分页。
 
 ```http
 POST http://localhost:8080/api/admin/dop/batch/user-quotas HTTP/1.1

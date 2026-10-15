@@ -61,7 +61,11 @@ func (api *dopBatchAPI) executeItem(r *http.Request, user AdminUser, operation, 
 		// its own method mutex; the database provides cross-process receipt locks.
 		store := *api.store
 		store.db, store.mu = tx, &sync.Mutex{}
-		s := &Server{store: &store, config: api.server.config}
+		lookupStore, err := prepareDOPBatchLookups(&store, operation, item)
+		if err != nil {
+			return err
+		}
+		s := &Server{store: lookupStore, config: api.server.config}
 		child := r.Clone(r.Context())
 		child.Body = io.NopCloser(bytes.NewReader(item.Body))
 		child.ContentLength = int64(len(item.Body))

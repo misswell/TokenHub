@@ -67,7 +67,7 @@ func TestDOPBatchUsageMatchesNativeCounters(t *testing.T) {
 
 func TestDOPBatchUsageUsesConstantQueryCountAndFailsClosed(t *testing.T) {
 	store, _, handler := newDOPBatchTestServer(t)
-	users := make([]AdminUser, 1000)
+	users := make([]AdminUser, 12000)
 	inputs := make([]dopBatchUsageInput, len(users))
 	for index := range users {
 		id := fmt.Sprintf("employee-%04d", index)
@@ -93,7 +93,7 @@ func TestDOPBatchUsageUsesConstantQueryCountAndFailsClosed(t *testing.T) {
 			t.Error(err)
 		}
 	})
-	for _, count := range []int{1, 1000} {
+	for _, count := range []int{1, 1000, 12000} {
 		queries = 0
 		response := dopBatchRequest(t, handler, "users/usage", "", map[string]any{"users": inputs[:count]})
 		if response.Code != http.StatusOK || queries > 9 {
@@ -133,11 +133,11 @@ func TestDOPBatchRejectsInvalidInputBeforeWriting(t *testing.T) {
 		{"missing idempotency", "user-quotas", "", dopTestItems(item)},
 		{"duplicate refs", "user-quotas", "k", dopTestItems(item, item)},
 		{"empty batch", "user-quotas", "k", dopTestItems()},
-		{"too many items", "user-quotas", "k", dopTestItems(make([]dopBatchItem, 1001)...)},
+		{"too many items", "user-quotas", "k", dopTestItems(make([]dopBatchItem, 12001)...)},
 		{"array body", "user-quotas", "k", dopTestItems(dopTestItem("one", "POST", "", []string{"bad"}))},
 		{"duplicate users", "users/usage", "", map[string]any{"users": []dopBatchUsageInput{{UserID: "same"}, {UserID: "same"}}}},
 		{"no users", "users/usage", "", map[string]any{"users": []any{}}},
-		{"too many users", "users/usage", "", map[string]any{"users": make([]dopBatchUsageInput, 1001)}},
+		{"too many users", "users/usage", "", map[string]any{"users": make([]dopBatchUsageInput, 12001)}},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			if response := dopBatchRequest(t, handler, test.route, test.key, test.body); response.Code != http.StatusBadRequest {
