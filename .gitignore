@@ -1,0 +1,69 @@
+# Dependencies
+node_modules/
+
+# Next.js
+.next/
+out/
+*.tsbuildinfo
+
+# Generated local artifacts
+tmp/
+output/
+artifacts/
+.tokenhub/
+
+# Internal design notes
+design/
+doc/
+docs/superpowers/
+scripts/
+# Staged planning notes some contributors keep at the repository root while working.
+# They describe how a change was built, which the pull request and the code comments
+# already carry, so they are working files rather than deliverables.
+IMPLEMENTATION_PLAN.md
+
+# Local research materials
+/papers/
+
+# Go
+bin/
+.tmp/
+*.test
+coverage.out
+backend/tokenhub
+
+# Local runtime data
+data/*
+!data/
+!data/builtin-plugins/
+!data/builtin-plugins/**
+!data/model-catalog.yaml
+!data/provider-catalog.json
+backend/data/
+backend/internal/server/data/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS / editors
+.DS_Store
+.idea/
+.vscode/
+
+# Claude Code
+.claude/
+.spec-workflow/
+CLAUDE.md
+backend/tokenhub-migrate
+sdk/migration-e2e/report.json
+
+# Vendored Helm subchart archives (rebuilt by helm dependency build)
+deploy/helm/tokenhub/charts/

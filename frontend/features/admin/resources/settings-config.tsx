@@ -1,0 +1,505 @@
+import { type AdminResource, type FieldConfig, notificationChannelTemplates, type ResourceConfig, type SQLiteBackup, type ViewKey } from "../core/types";
+import { notificationChannelLabel, notificationChannelTargetSummary, notificationChannelType, notificationChannelUsesEmail, notificationChannelUsesIncomingWebhook, notificationChannelUsesTelegram, notificationChannelUsesWhatsApp, notificationCredentialSummary } from "../domain/catalog";
+import { apiKeyOwnerSelectOptions, costCenterLabel, costCenterSelectOptions, fieldSummary, oauthDefaultProjectRoleOptions, ownerUserLabel, projectMemberProjectSelectOptions, stringifyValue, teamMemberCount, teamSelectOptions, userSelectOptions } from "../domain/entities";
+import { appRole } from "../core/navigation";
+import { formatBytes, formatNumber, formatTime } from "../domain/formatting";
+import { boolLabel, dataScopeLabel, identityProviderDefaultGrantLabel, identityProviderLoginEntryLabel, identityProviderTypeLabel, monitorTargetLabel, numberFromUnknown, numberOr } from "../domain/labels";
+import { formatTranslationTemplate, languageLocale, tx } from "../i18n/runtime";
+import { genericResourceConfig } from "./generic-config";
+import { adminUserConfig, alertDeliveryConfig, alertEventConfig, alertRuleConfig, approvalConfig, approvalFlowConfig, costCenterConfig, downloadSQLiteBackup, reportConfig, restoreSQLiteBackup } from "./governance-config";
+import { adminDelete, adminFetch, adminMutate, readAdminError, identityProviderPayload, notificationChannelPayload } from "./payloads";
+import { apiKeyConfig, projectConfig, projectMemberConfig } from "./project-key-config";
+import { modelConfig, providerConfig, routeConfig } from "./provider-model-config";
+import { routingPolicyConfig } from "./routing-policy-config";
+import { StatusPill } from "../shared/ui";
+import { identityProviderIconOptions, identityProviderInitialFormValues, identityProviderTemplateOptionsFromData } from "../shared/auth";
+
+let cachedResourceConfigs: Partial<Record<ViewKey, ResourceConfig<any>>> | undefined;
+
+export function resourceConfigFor(view: ViewKey) {
+  cachedResourceConfigs ??= createResourceConfigs();
+  return cachedResourceConfigs[view];
+}
+
+function createResourceConfigs(): Partial<Record<ViewKey, ResourceConfig<any>>> {
+  return {
+  providers: providerConfig(),
+  models: modelConfig(),
+  routes: routeConfig(),
+  "routing-policies": routingPolicyConfig(),
+  projects: projectConfig(),
+  "project-members": projectMemberConfig(),
+  "api-keys": apiKeyConfig(),
+  teams: teamConfig(),
+  users: adminUserConfig(),
+  "quota-policies": quotaPolicyConfig(),
+  "cost-centers": costCenterConfig(),
+  "approval-flows": approvalFlowConfig(),
+  reports: reportConfig(),
+  "notification-channels": notificationChannelConfig(),
+  monitors: monitorConfig(),
+  alerts: alertRuleConfig(),
+  "alert-events": alertEventConfig(),
+  "alert-deliveries": alertDeliveryConfig(),
+  approvals: approvalConfig(),
+  "security-policies": genericResourceConfig("security-policies", "安全策略", "Prompt 日志保护、错误透传和 IP 访问控制", [
+    { key: "mask_prompts", label: "脱敏 Prompt", type: "boolean", help: "开启后策略要求请求与响应审计避免直接展示完整 Prompt。" },
+    { key: "ip_allowlist", label: "IP 白名单", type: "textarea", placeholder: "127.0.0.1/32\n10.0.0.0/8", help: "每行一个 CIDR 或 IP，留空表示不配置白名单。" },
+    { key: "error_passthrough", label: "错误透传", type: "select", options: ["sanitized", "passthrough", "hidden"], required: true },
+  ]),
+  "sqlite-backups": sqliteBackupConfig(),
+  announcements: genericResourceConfig("announcements", "公告通知", "后台公告、试运行通知和操作提示", [
+    { key: "notify_mode", label: "通知模式", type: "select", options: ["silent", "popup"], required: true },
+    { key: "target", label: "目标对象" },
+  ]),
+  "identity-providers": identityProviderConfig(),
+  settings: systemSettingConfig(),
+  };
+}
+
+function quotaPolicyConfig(): ResourceConfig<AdminResource> {
+  const base = genericResourceConfig("quota-policies", "额度策略", "按全局、项目、团队、API Key 或用户聚合请求、Token、成本与并发上限", [
+    { key: "scope", label: "作用域", type: "select", options: ["global", "project", "api_key", "team", "user"], required: true },
+    {
+      key: "scope_id",
+      label: "作用域对象",
+      type: "select",
+      optionsFromData: (data, currentUser, values) => {
+        switch (values?.scope) {
+          case "global":
+            return [{ value: "global", label: "全局" }];
+          case "project":
+            return projectMemberProjectSelectOptions(data);
+          case "api_key":
+            return data.keys.map((key) => ({ value: key.id, label: `${key.name || key.id} / ${key.key_prefix}...${key.key_suffix}` }));
+          case "team":
+            return teamSelectOptions(data);
+          case "user":
+            return [
+              ...(currentUser && appRole(currentUser.role) === "admin" ? [{ value: "all_users", label: tx("所有用户（每人独立额度）") }] : []),
+              ...apiKeyOwnerSelectOptions(data, currentUser),
+            ];
+          default:
+            return [];
+        }
+      },
+      required: true,
+      help: "用户作用域合并每人的所有归属 Key，轮换不会重置额度。管理员可选择所有用户，自动覆盖现有和新用户；与个人策略逐项取更严格的限制。",
+    },
+    { key: "rate_limit_rpm", label: "每分钟请求数（RPM）", type: "number" },
+    { key: "token_limit_tpm", label: "每分钟 Token 数（TPM）", type: "number" },
+    { key: "daily_requests", label: "日请求", type: "number" },
+    { key: "monthly_requests", label: "月请求", type: "number" },
+    { key: "daily_tokens", label: "日 Token", type: "number" },
+    { key: "monthly_tokens", label: "月 Token", type: "number" },
+    { key: "daily_cost_usd", label: "日成本 USD", type: "number" },
+    { key: "monthly_cost_usd", label: "月成本 USD", type: "number" },
+    { key: "max_concurrency", label: "最大并发", type: "number" },
+  ]);
+  return {
+    ...base,
+    columns: [
+      ...base.columns.slice(0, 3),
+      {
+        key: "current_usage",
+        label: "用量统计",
+        render: (item) => isDefaultUserQuota(item) ? tx("按用户分别统计") : item.current_usage
+          ? `${formatQuotaUsage(tx("日：{requests} 次请求 · {tokens} Token · {cost}"), item.current_usage.daily)} / ${formatQuotaUsage(tx("月：{requests} 次请求 · {tokens} Token · {cost}"), item.current_usage.monthly)}`
+          : "-",
+      },
+      ...base.columns.slice(3).map((column) => column.key === "fields" ? {
+        ...column,
+        render: (item: AdminResource) => fieldSummary(isDefaultUserQuota(item)
+          ? { ...item.fields, scope_id: tx("所有用户（每人独立额度）") } : item.fields),
+      } : column),
+    ],
+  };
+}
+
+function isDefaultUserQuota(item: AdminResource) {
+  return (stringifyValue(item.fields?.scope).trim() || stringifyValue(item.fields?.scope_type).trim()).toLowerCase() === "user"
+    && stringifyValue(item.fields?.scope_id).trim() === "all_users";
+}
+
+function formatQuotaUsage(template: string, usage: { requests: number; total_tokens: number; cost_usd: number }) {
+  const locale = languageLocale();
+  return formatTranslationTemplate(template, {
+    requests: new Intl.NumberFormat(locale).format(usage.requests || 0),
+    tokens: new Intl.NumberFormat(locale).format(usage.total_tokens || 0),
+    cost: new Intl.NumberFormat(locale, { style: "currency", currency: "USD", maximumFractionDigits: 6 }).format(usage.cost_usd || 0),
+  });
+}
+
+export function systemSettingConfig(): ResourceConfig<AdminResource> {
+  const base = genericResourceConfig("settings", "系统设置", "网关地址、审计保留、企业集成和默认策略", [
+    { key: "public_base_url", label: "公开 Base URL", help: "对外展示给业务系统和 API 文档示例的网关地址。" },
+    { key: "default_timeout", label: "默认超时", help: "网关转发上游请求的默认等待时间，例如 120s。" },
+    { key: "audit_retention", label: "审计保留", help: "请求和响应正文的保留周期，范围为 1d 至 3650d；请求元数据不会被清理。" },
+    { key: "dashboard_timezone", label: "用量看板时区", placeholder: "UTC", help: "用于当天用量和使用趋势的自然日边界。请填写 IANA 时区，例如 UTC、Asia/Shanghai 或 America/New_York。" },
+    { key: "quota_timezone", label: "配额时区", placeholder: "UTC", help: "每日和每月配额按此时区的零点重置，默认 UTC。可填写 Asia/Shanghai 等 IANA 时区。修改不会重新归属历史用量。" },
+    { key: "plugin_marketplace_url", label: "插件市场地址", placeholder: "", help: "插件管理页右上角打开的插件市场网站地址。必须使用 HTTP 或 HTTPS。" },
+    { key: "api_key_prefix", label: "API Key 前缀", placeholder: "sk_", help: "新建和轮换 Key 时使用；建议以 _ 结尾，例如 sk_。" },
+    { key: "api_key_random_length", label: "API Key 随机长度", type: "number", placeholder: "48", help: "前缀后面的随机字符数，系统会限制在 24-128 之间。" },
+    {
+      key: "provider_egress_mode",
+      label: "Provider 出口模式",
+      type: "select",
+      optionsFromData: () => [
+        { value: "inherit_environment", label: "继承环境变量代理" },
+        { value: "direct", label: "直接连接" },
+        { value: "configured_proxy", label: "使用统一代理" },
+      ],
+      required: true,
+      help: "适用于 Provider 上游请求；本机与内网目标默认直连。其他目标默认继承 HTTP_PROXY、HTTPS_PROXY 和 NO_PROXY。",
+    },
+    {
+      key: "provider_proxy_protocol",
+      label: "代理协议",
+      type: "select",
+      options: ["http", "https"],
+      required: true,
+      visible: (values) => values.provider_egress_mode === "configured_proxy",
+      help: "支持 HTTP 或 HTTPS forward proxy，不支持 SOCKS5。",
+    },
+    {
+      key: "provider_proxy_host",
+      label: "代理 Host",
+      required: true,
+      visible: (values) => values.provider_egress_mode === "configured_proxy",
+    },
+    {
+      key: "provider_proxy_port",
+      label: "代理端口",
+      type: "number",
+      required: true,
+      visible: (values) => values.provider_egress_mode === "configured_proxy",
+    },
+    {
+      key: "provider_proxy_auth_enabled",
+      label: "启用代理 Basic 认证",
+      type: "boolean",
+      visible: (values) => values.provider_egress_mode === "configured_proxy",
+    },
+    {
+      key: "provider_proxy_username",
+      label: "代理用户名",
+      required: true,
+      visible: (values) => values.provider_egress_mode === "configured_proxy" && values.provider_proxy_auth_enabled === "true",
+    },
+    {
+      key: "provider_proxy_password",
+      label: "代理密码",
+      type: "password",
+      autoComplete: "new-password",
+      help: "密码会加密保存；编辑时留空表示保留原密码，关闭认证会清除用户名和密码。",
+      visible: (values) => values.provider_egress_mode === "configured_proxy" && values.provider_proxy_auth_enabled === "true",
+    },
+    {
+      key: "provider_synthetic_dns_enabled",
+      label: "允许 Provider 使用 Synthetic DNS / Fake-IP",
+      type: "boolean",
+      help: "仅当 TokenHub 所在主机启用了 Fake-IP 代理，且 Provider 域名因此解析到合成地址时开启。该例外只用于域名解析结果，不允许把字面量 IP 直接配置为 Provider Base URL。",
+    },
+    {
+      key: "provider_synthetic_dns_allow_private_ranges",
+      label: "允许信任私网 / ULA Synthetic DNS 网段（高风险）",
+      type: "boolean",
+      visible: (values) => values.provider_synthetic_dns_enabled === "true",
+      help: "默认仍禁止 RFC1918 私网和 IPv6 ULA。仅当代理确实把这些范围用作 Fake-IP 池（例如部分 Xray IPv6 配置）时开启；开启后，恶意或被劫持的 Provider 域名可能访问该范围内的真实内网服务。",
+    },
+    {
+      key: "provider_synthetic_dns_cidrs",
+      label: "Synthetic DNS / Fake-IP 网段",
+      type: "textarea",
+      placeholder: "198.18.0.0/15",
+      help: "安全提示：每行一个 CIDR，必须与本机代理的实际 Fake-IP 池一致。198.18.0.0/15 是基准测试保留网段，只是常被代理软件用作 Fake-IP，并非 Fake-IP 专属；不同软件或配置可使用其他网段。配置过宽或填入真实内网会削弱 SSRF 防护。loopback、link-local、metadata、multicast、NAT64 等敏感范围始终禁止。",
+    },
+  ]);
+  return {
+    ...base,
+    eyebrow: "基础设置",
+    create: undefined,
+    remove: undefined,
+    toForm: (item) => ({
+      ...(base.toForm?.(item) ?? {}),
+      quota_timezone: stringifyValue(item.fields?.quota_timezone) || "UTC",
+      dashboard_timezone: stringifyValue(item.fields?.dashboard_timezone) || "UTC",
+      plugin_marketplace_url: stringifyValue(item.fields?.plugin_marketplace_url) || "",
+    }),
+  };
+}
+
+export function identityProviderConfig(): ResourceConfig<AdminResource> {
+  const fields: FieldConfig[] = [
+    { key: "provider_template", label: "身份源模板", type: "select", optionsFromData: identityProviderTemplateOptionsFromData },
+    { key: "provider_type", label: "协议", type: "select", options: ["oidc", "oauth2", "saml", "ldap"], required: true },
+    { key: "icon_key", label: "登录图标", type: "select", options: identityProviderIconOptions, help: "auto 会根据名称、Issuer URL 和类型自动选择登录页图标。" },
+    { key: "login_label", label: "登录按钮名称", placeholder: "Google", help: "留空时按图标、Issuer 或身份源名称自动推断。" },
+    { key: "issuer_url", label: "Issuer URL" },
+    { key: "client_id", label: "Client ID", required: true },
+    { key: "client_secret", label: "Client Secret", type: "password", help: "编辑时留空则不修改已保存密钥。" },
+    { key: "agent_id", label: "Agent ID", required: true, help: "企业微信自建应用的 Agent ID。", visible: (values) => values.provider_template === "wecom" },
+    { key: "authorize_url", label: "授权端点" },
+    { key: "token_url", label: "Token 端点" },
+    { key: "userinfo_url", label: "用户信息端点" },
+    { key: "userdetail_url", label: "用户详情端点", help: "企微根据 UserId 读取成员详情的端点。", visible: (values) => values.provider_template === "wecom" },
+    { key: "redirect_uri", label: "Callback URL", help: "必须与 OAuth 应用中登记的 Redirect URI 完全一致；留空时按当前后端访问地址自动生成。" },
+    { key: "scopes", label: "授权范围" },
+    { key: "username_claim", label: "用户名 Claim" },
+    { key: "email_claim", label: "邮箱 Claim" },
+    { key: "team_claim", label: "团队 Claim" },
+    { key: "subject_claim", label: "用户唯一标识 Claim", help: "平台不返回邮箱时，用该 Claim 生成稳定的内部邮箱。" },
+    { key: "default_role", label: "默认角色", type: "select", options: ["user", "team_leader"], help: "首次 OAuth 登录创建用户时使用；不会覆盖已存在用户角色。" },
+    { key: "default_team_id", label: "默认团队", type: "select", optionsFromData: teamSelectOptions, help: "团队字段无法映射时使用。" },
+    { key: "default_project_id", label: "默认项目", type: "select", optionsFromData: projectMemberProjectSelectOptions, help: "登录后自动加入该项目空间。" },
+    { key: "default_project_role", label: "默认项目角色", type: "select", optionsFromData: oauthDefaultProjectRoleOptions, help: "自动加入默认项目时授予的项目权限。" },
+  ];
+  const base = genericResourceConfig("identity-providers", "身份源", "配置企业 SSO/OAuth/OIDC 登录和首次登录授权。", fields);
+  return {
+    ...base,
+    eyebrow: "身份源",
+    createLabel: "新增身份源",
+    columns: [
+      { key: "name", label: "名称" },
+      { key: "login_entry", label: "登录入口", render: (item) => identityProviderLoginEntryLabel(item) },
+      { key: "provider_type", label: "协议", render: (item) => identityProviderTypeLabel(stringifyValue(item.fields?.provider_type)) },
+      { key: "issuer_url", label: "Issuer", render: (item) => stringifyValue(item.fields?.issuer_url) || "-" },
+      { key: "default_grant", label: "默认授权", render: (item, ctx) => identityProviderDefaultGrantLabel(ctx, item) },
+      { key: "status", label: "状态", render: (item) => <StatusPill status={item.status} /> },
+    ],
+    create: (ctx, values) => adminMutate(ctx, "/api/admin/resources/identity-providers", "POST", identityProviderPayload(values, fields)),
+    update: (ctx, item, values) => adminMutate(ctx, `/api/admin/resources/identity-providers/${item.id}`, "PATCH", identityProviderPayload(values, fields, item)),
+    toForm: (item) => {
+      const form = base.toForm?.(item) ?? {};
+      form.client_secret = "";
+      return identityProviderInitialFormValues(form, false);
+    },
+  };
+}
+
+export function roleConfig(): ResourceConfig<AdminResource> {
+  const fields: FieldConfig[] = [
+    { key: "role_key", label: "角色标识", required: true, placeholder: "user", readOnlyOnEdit: true },
+    { key: "display_name", label: "显示名称", required: true, placeholder: "普通用户" },
+    { key: "data_scope", label: "数据范围", type: "select", options: ["global", "team", "project", "self"], required: true },
+    { key: "assignable", label: "可分配", type: "boolean" },
+  ];
+  return {
+    ...genericResourceConfig("role-configs", "角色配置", "配置用户管理新增/编辑时可选择的后台角色。权限边界由系统内置角色模型控制。", fields),
+    eyebrow: "角色配置",
+    createLabel: "新增可选角色",
+    columns: [
+      { key: "name", label: "名称" },
+      { key: "role_key", label: "角色标识", render: (item) => stringifyValue(item.fields?.role_key) || item.id },
+      { key: "display_name", label: "显示名称", render: (item) => stringifyValue(item.fields?.display_name) || item.name },
+      { key: "data_scope", label: "数据范围", render: (item) => dataScopeLabel(stringifyValue(item.fields?.data_scope)) },
+      { key: "assignable", label: "可分配", render: (item) => boolLabel(item.fields?.assignable) },
+      { key: "status", label: "状态", render: (item) => <StatusPill status={item.status} /> },
+    ],
+  };
+}
+
+export function teamConfig(): ResourceConfig<AdminResource> {
+  const fields: FieldConfig[] = [
+    {
+      key: "owner",
+      label: "负责人",
+      type: "select",
+      optionsFromData: userSelectOptions,
+      help: "从用户管理中选择团队负责人，用于审批和审计归属。",
+    },
+    {
+      key: "cost_center",
+      label: "成本中心",
+      type: "select",
+      optionsFromData: costCenterSelectOptions,
+      help: "费用归集口径，可与团队不同；用于成本归集和用量统计。",
+    },
+  ];
+  return {
+    ...genericResourceConfig("teams", "团队分组", "企业团队、负责人和费用归属", fields),
+    columns: [
+      { key: "name", label: "团队名称" },
+      { key: "owner", label: "负责人", render: (item, ctx) => ownerUserLabel(ctx, stringifyValue(item.fields?.owner)) },
+      { key: "cost_center", label: "成本中心", render: (item, ctx) => costCenterLabel(ctx, stringifyValue(item.fields?.cost_center)) },
+      { key: "members", label: "成员数", render: (item, ctx) => formatNumber(teamMemberCount(ctx, item)) },
+      { key: "status", label: "状态", render: (item) => <StatusPill status={item.status} /> },
+      { key: "updated_at", label: "更新时间", render: (item) => formatTime(item.updated_at ?? "") },
+    ],
+  };
+}
+
+export function sqliteBackupConfig(): ResourceConfig<SQLiteBackup> {
+  return {
+    view: "sqlite-backups",
+    title: "数据备份",
+    eyebrow: "SQLite 备份",
+    description: "创建、下载和恢复 TokenHub SQLite 数据库快照。",
+    createLabel: "创建备份",
+    columns: [
+      { key: "name", label: "名称" },
+      { key: "status", label: "状态", render: (item) => <StatusPill status={item.status} /> },
+      { key: "size_bytes", label: "大小", render: (item) => formatBytes(item.size_bytes) },
+      { key: "trigger", label: "触发方式", render: (item) => item.trigger || "manual" },
+      { key: "created_at", label: "创建时间", render: (item) => formatTime(item.created_at) },
+      { key: "restored_at", label: "最近恢复", render: (item) => item.restored_at ? formatTime(item.restored_at) : "-" },
+      { key: "checksum_sha256", label: "校验", render: (item) => item.checksum_sha256 ? `${item.checksum_sha256.slice(0, 10)}...` : "-" },
+    ],
+    fields: [
+      { key: "expire_days", label: "保留天数", type: "number", placeholder: "0 表示不过期" },
+    ],
+    list: (ctx) => ctx.sqliteBackups,
+    create: async (ctx, values) => {
+      const resp = await adminFetch(ctx, "/api/admin/sqlite/backups", {
+        method: "POST",
+        body: JSON.stringify({ expire_days: numberOr(values.expire_days, 14) }),
+      });
+      if (!resp.ok) throw new Error(`create sqlite backup ${resp.status}`);
+      await resp.json().catch(() => undefined);
+    },
+    remove: (ctx, item) => adminDelete(ctx, `/api/admin/sqlite/backups/${item.id}`),
+    actions: [
+      {
+        label: "下载",
+        title: "下载 SQLite 备份文件",
+        run: async (ctx, item) => downloadSQLiteBackup(ctx, item),
+        doneMessage: () => tx("备份文件已开始下载"),
+      },
+      {
+        label: "恢复",
+        title: "将数据库恢复到该备份",
+        run: async (ctx, item) => restoreSQLiteBackup(ctx, item),
+        doneMessage: (item) => `${tx("已恢复备份")} ${item.id}`,
+      },
+    ],
+  };
+}
+
+export function notificationChannelConfig(): ResourceConfig<AdminResource> {
+  const fields: FieldConfig[] = [
+    { key: "type", label: "渠道类型", type: "select", optionsFromData: () => notificationChannelTemplates.map((template) => ({ value: template.type, label: template.label })), required: true },
+    { key: "webhook_url", label: "Webhook URL", required: true, visible: notificationChannelUsesIncomingWebhook },
+    { key: "secret", label: "签名密钥", type: "password", help: "可选预留。当前按普通机器人 Webhook 发送，留空不影响通知。", visible: notificationChannelUsesIncomingWebhook },
+    { key: "telegram_bot_token", label: "Telegram Bot Token", type: "password", required: true, help: "编辑时留空表示不修改。", visible: notificationChannelUsesTelegram },
+    { key: "telegram_chat_id", label: "Telegram Chat ID", required: true, visible: notificationChannelUsesTelegram },
+    { key: "telegram_thread_id", label: "Telegram Topic ID", visible: notificationChannelUsesTelegram },
+    { key: "whatsapp_phone_number_id", label: "WhatsApp Phone Number ID", required: true, visible: notificationChannelUsesWhatsApp },
+    { key: "whatsapp_to", label: "WhatsApp 收件人", required: true, visible: notificationChannelUsesWhatsApp },
+    { key: "access_token", label: "Access Token", type: "password", required: true, help: "编辑时留空表示不修改。", visible: notificationChannelUsesWhatsApp },
+    { key: "whatsapp_api_version", label: "WhatsApp API Version", visible: notificationChannelUsesWhatsApp },
+    { key: "smtp_host", label: "SMTP Host", required: true, visible: notificationChannelUsesEmail },
+    { key: "smtp_port", label: "SMTP 端口", type: "number", required: true, visible: notificationChannelUsesEmail },
+    { key: "smtp_encryption", label: "SMTP 加密", type: "select", options: ["auto", "starttls", "ssl"], visible: notificationChannelUsesEmail, help: "auto：按服务器能力机会式升级 STARTTLS（legacy）；starttls：强制 STARTTLS，服务器不支持时拒绝发送（端口 587）；ssl：从第一个字节即隐式 TLS（端口 465）。" },
+    { key: "smtp_username", label: "SMTP 用户名", visible: notificationChannelUsesEmail },
+    { key: "smtp_password", label: "SMTP 密码", type: "password", help: "编辑时留空表示不修改。", visible: notificationChannelUsesEmail },
+    { key: "smtp_from", label: "发件人", required: true, visible: notificationChannelUsesEmail },
+    { key: "email_to", label: "收件人", required: true, help: "多个收件人用英文逗号分隔。", visible: notificationChannelUsesEmail },
+  ];
+  const config = genericResourceConfig(
+    "notification-channels",
+    "通知渠道",
+    "按 Webhook、Slack、Discord、Telegram、WhatsApp、飞书、钉钉、企业微信和邮件快速配置告警通知目标。",
+    fields,
+  );
+  return {
+    ...config,
+    eyebrow: "渠道配置",
+    createLabel: "配置通知渠道",
+    columns: [
+      { key: "name", label: "名称" },
+      { key: "fields.type", label: "渠道", render: (item) => notificationChannelLabel(notificationChannelType(item)) },
+      { key: "fields.webhook_url", label: "目标", render: (item) => notificationChannelTargetSummary(item) },
+      { key: "fields.secret", label: "凭证", render: (item) => notificationCredentialSummary(item) },
+      { key: "status", label: "状态", render: (item) => <StatusPill status={item.status} /> },
+      { key: "updated_at", label: "更新时间", render: (item) => formatTime(item.updated_at ?? "") },
+    ],
+    actions: [{
+      label: "发送测试通知",
+      pendingMessage: "测试通知发送中…",
+      title: "使用已保存的配置向目标发送一条测试通知",
+      run: async (ctx, item) => {
+        const resp = await adminFetch(ctx, `/api/admin/resources/notification-channels/${encodeURIComponent(item.id)}/test`, { method: "POST" });
+        if (!resp.ok) throw new Error(await readAdminError(resp, tx("测试通知发送失败")));
+        const delivery = await resp.json() as { status: string; error?: string };
+        if (delivery.status !== "success") {
+          throw new Error(formatTranslationTemplate(tx("测试通知发送失败：{error}"), { error: delivery.error || tx("操作失败") }));
+        }
+      },
+      doneMessage: () => tx("测试通知已提交，请到收件箱或目标渠道确认接收。"),
+    }],
+    create: (ctx, values) => adminMutate(ctx, "/api/admin/resources/notification-channels", "POST", notificationChannelPayload(values)),
+    update: (ctx, item, values) => adminMutate(ctx, `/api/admin/resources/notification-channels/${item.id}`, "PATCH", notificationChannelPayload(values, item)),
+    toForm: (item) => ({
+      name: item.name,
+      description: item.description ?? "",
+      status: item.status,
+      type: notificationChannelType(item),
+      webhook_url: stringifyValue(item.fields?.webhook_url),
+      secret: "",
+      telegram_bot_token: "",
+      telegram_chat_id: stringifyValue(item.fields?.telegram_chat_id || item.fields?.chat_id),
+      telegram_thread_id: stringifyValue(item.fields?.telegram_thread_id || item.fields?.message_thread_id),
+      whatsapp_phone_number_id: stringifyValue(item.fields?.whatsapp_phone_number_id || item.fields?.phone_number_id),
+      whatsapp_to: stringifyValue(item.fields?.whatsapp_to || item.fields?.recipient || item.fields?.to),
+      access_token: "",
+      whatsapp_api_version: stringifyValue(item.fields?.whatsapp_api_version || item.fields?.api_version || "v20.0"),
+      smtp_host: stringifyValue(item.fields?.smtp_host),
+      smtp_port: stringifyValue(item.fields?.smtp_port),
+      smtp_encryption: stringifyValue(item.fields?.smtp_encryption) || "auto",
+      smtp_username: stringifyValue(item.fields?.smtp_username),
+      smtp_password: "",
+      smtp_from: stringifyValue(item.fields?.smtp_from),
+      email_to: stringifyValue(item.fields?.email_to),
+    }),
+  };
+}
+
+export function monitorConfig(): ResourceConfig<AdminResource> {
+  const fields: FieldConfig[] = [
+    { key: "target_type", label: "目标类型", type: "select", options: ["provider", "resource", "model"], required: true },
+    { key: "provider_id", label: "Provider ID" },
+    { key: "provider_resource_id", label: "资源实例 ID" },
+    { key: "model", label: "模型" },
+    { key: "interval_seconds", label: "间隔秒数", type: "number" },
+  ];
+  const config = genericResourceConfig(
+    "monitors",
+    "健康检测",
+    "系统自动检测 Provider、资源实例和模型路由状态，帮助确认模型 API 链路是否可用。",
+    fields,
+  );
+  return {
+    ...config,
+    eyebrow: "默认检测项",
+    columns: [
+      { key: "name", label: "名称" },
+      { key: "fields.target_type", label: "目标类型", render: (item) => monitorTargetLabel(item.fields) },
+      { key: "fields.provider_id", label: "Provider", render: (item) => stringifyValue(item.fields?.provider_id) || "-" },
+      { key: "fields.provider_resource_id", label: "资源实例", render: (item) => stringifyValue(item.fields?.provider_resource_id) || "-" },
+      { key: "fields.model", label: "模型", render: (item) => stringifyValue(item.fields?.model) || "-" },
+      { key: "fields.last_status", label: "最近状态", render: (item) => <StatusPill status={stringifyValue(item.fields?.last_status || item.fields?.last_result || "unknown")} /> },
+      { key: "fields.last_message", label: "最近消息", render: (item) => tx(stringifyValue(item.fields?.last_message)) || "-" },
+      { key: "fields.latency_ms", label: "延迟", render: (item) => `${numberFromUnknown(item.fields?.latency_ms)}ms` },
+      { key: "fields.last_checked_at", label: "最近检测", render: (item) => formatTime(stringifyValue(item.fields?.last_checked_at)) },
+      { key: "status", label: "状态", render: (item) => <StatusPill status={item.status} /> },
+    ],
+    create: undefined,
+    update: undefined,
+    remove: undefined,
+    actions: [
+      {
+        label: "立即检测",
+        title: "立即执行该健康检测",
+        run: async (ctx, item) => {
+          const resp = await adminFetch(ctx, `/api/admin/resources/monitors/${item.id}/run`, {
+            method: "POST",
+            body: JSON.stringify({}),
+          });
+          if (!resp.ok) throw new Error(`run monitor ${resp.status}`);
+          await resp.json().catch(() => undefined);
+        },
+        doneMessage: (item) => `${item.name} 已完成检测`,
+      },
+    ],
+  };
+}

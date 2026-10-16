@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "baselines": {
+    "postgres": "39778256e5e0c25c1c708d8ede7269d16f906e245db55a2125124f3d93c8290d",
+    "sqlite": "868083cd5191efa1bfcebd5dc37e152aa0d9955d4e427015dba17e51d87edb07"
+  },
+  "migrations": [
+    {
+      "version": 2,
+      "name": "add-granular-billing-columns-sqlite",
+      "phase": "expand",
+      "dialect": "sqlite",
+      "checksum": "tokenhub-schema-granular-billing-sqlite-v1",
+      "lock_timeout_seconds": 30,
+      "statement_budget": 60
+    },
+    {
+      "version": 3,
+      "name": "add-granular-billing-columns-postgres",
+      "phase": "expand",
+      "dialect": "postgres",
+      "checksum": "5f48b7b59084c2a12f8f743d06c52cc9f14299679f07fb7ac09820ca694c937c",
+      "lock_timeout_seconds": 30,
+      "statement_budget": 50
+    },
+    {
+      "version": 4,
+      "name": "add-metering-evidence",
+      "phase": "expand",
+      "dialect": "",
+      "checksum": "4d282c33fb83adcf772a560ddb2b772116e9f6bbd3ecee0a68bda70fc447e50c",
+      "lock_timeout_seconds": 30,
+      "statement_budget": 10
+    },
+    {
+      "version": 5,
+      "name": "add-audit-event-correlation",
+      "phase": "expand",
+      "dialect": "",
+      "checksum": "tokenhub-schema-audit-event-correlation-v1",
+      "lock_timeout_seconds": 30,
+      "statement_budget": 10
+    },
+    {
+      "version": 6,
+      "name": "add-jev-response-bindings",
+      "phase": "expand",
+      "dialect": "",
+      "checksum": "d4fffe9ce0a02dcf7bf27d5d44541f121f8ffd76384b8e1168365d8c26199a80",
+      "lock_timeout_seconds": 30,
+      "statement_budget": 10
+    },
+    {
+      "version": 7,
+      "name": "add-image-job-worker-instance",
+      "phase": "expand",
+      "dialect": "",
+      "checksum": "tokenhub-schema-image-job-worker-instance-v1",
+      "lock_timeout_seconds": 30,
+      "statement_budget": 8
+    }
+  ]
+}

@@ -1,0 +1,3781 @@
+{
+  "id": "alibaba",
+  "api": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+  "name": "alibaba",
+  "doc": "https://www.alibabacloud.com/help/en/model-studio/models",
+  "display_name": "alibaba",
+  "models": [
+    {
+      "id": "qwen3.8-livetranslate-flash-realtime",
+      "name": "Qwen3.8 LiveTranslate Flash Realtime",
+      "display_name": "Qwen3.8 LiveTranslate Flash Realtime",
+      "family": "qwen-livetranslate",
+      "type": "audio",
+      "modalities": {
+        "input": [
+          "audio",
+          "image"
+        ],
+        "output": [
+          "text",
+          "audio"
+        ]
+      },
+      "metadata": {
+        "upstream_source": "https://help.aliyun.com/zh/model-studio/qwen3-8-livetranslate-flash-realtime",
+        "verified_at": "2026-10-10",
+        "availability": "active",
+        "pricing_status": "unverified",
+        "pricing_source": "https://help.aliyun.com/zh/model-studio/qwen3-8-livetranslate-flash-realtime",
+        "original_currency": "CNY",
+        "original_unit": "per_million_tokens",
+        "original_prices": "{\"audio_input\":54.688,\"image_input\":4.01,\"output\":145.835,\"audio_output\":218.752}",
+        "pricing_note": "Published CNY per million modality tokens for Beijing or Singapore respectively; no USD conversion.",
+        "protocol": "realtime",
+        "region": "Singapore",
+        "max_input_tokens": "49152",
+        "api_note": "Workspace-bound Realtime API. Uses session.output_modalities and response.text.delta/audio_transcript.delta; differs from 3.5 event semantics.",
+        "catalog_reviewed_at": "2026-10-10",
+        "lifecycle_status": "active",
+        "max_output_tokens": "4096",
+        "call_support": "unsupported",
+        "support_note": "Catalog only: a matching media/session adapter and native-unit billing are required."
+      },
+      "limit": {
+        "context": 53248,
+        "output": 4096
+      },
+      "tool_call": false,
+      "category": "qwen",
+      "last_updated": "2026-10-10",
+      "supported_parameters": []
+    },
+    {
+      "id": "qwen3.8-omni-flash-realtime",
+      "name": "Qwen3.8 Omni Flash Realtime",
+      "display_name": "Qwen3.8 Omni Flash Realtime",
+      "family": "qwen-omni",
+      "type": "audio",
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "audio",
+          "video"
+        ],
+        "output": [
+          "text",
+          "audio"
+        ]
+      },
+      "metadata": {
+        "upstream_source": "https://help.aliyun.com/zh/model-studio/qwen3-8-omni-flash-realtime",
+        "verified_at": "2026-10-10",
+        "availability": "active",
+        "pricing_status": "unverified",
+        "protocol": "realtime",
+        "api_note": "Workspace-bound WebSocket endpoint; also WebRTC/AOQ. Not an ordinary Chat Completions operation.",
+        "context_limit_note": "196608 is total input token cap, not combined context; maximum output is 65536.",
+        "max_input_tokens": "196608",
+        "audio_history_seconds": "600",
+        "video_history_seconds": "240",
+        "pricing_note": "Audio and corresponding output text are both billed separately.",
+        "pricing_source": "https://www.alibabacloud.com/help/en/model-studio/model-pricing",
+        "original_currency": "USD",
+        "original_unit": "per_million_tokens",
+        "original_prices": "{\"input\":0.23,\"output\":0.7,\"audio_input\":0.93,\"audio_output\":1.87}",
+        "catalog_reviewed_at": "2026-10-10",
+        "lifecycle_status": "active",
+        "max_output_tokens": "65536",
+        "call_support": "unsupported",
+        "support_note": "Catalog only: a matching media/session adapter and native-unit billing are required."
+      },
+      "limit": {
+        "output": 65536
+      },
+      "tool_call": true,
+      "category": "qwen",
+      "last_updated": "2026-10-10",
+      "supported_parameters": []
+    },
+    {
+      "id": "qwen-image-2.1-pro",
+      "name": "Qwen Image 2.1 Pro",
+      "display_name": "Qwen Image 2.1 Pro",
+      "family": "qwen-image",
+      "type": "image",
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ],
+        "output": [
+          "image"
+        ]
+      },
+      "metadata": {
+        "upstream_source": "https://help.aliyun.com/zh/model-studio/qwen-image-2-1-pro",
+        "verified_at": "2026-10-10",
+        "availability": "active",
+        "pricing_status": "unverified",
+        "billing_unit": "image",
+        "pricing_source": "https://www.alibabacloud.com/help/en/model-studio/model-pricing",
+        "original_currency": "USD",
+        "original_unit": "per_output_image",
+        "original_prices": "{\"output\":0.04}",
+        "max_reference_images": "10",
+        "transparent_background": "true",
+        "pricing_note": "Price per generated image; no token price. Account activation and image API adapter remain separate.",
+        "catalog_reviewed_at": "2026-10-10",
+        "lifecycle_status": "active",
+        "call_support": "unsupported",
+        "support_note": "Catalog only: a matching media/session adapter and native-unit billing are required."
+      },
+      "reasoning": {
+        "supported": false
+      },
+      "tool_call": false,
+      "category": "qwen",
+      "last_updated": "2026-10-10",
+      "supported_parameters": []
+    },
+    {
+      "id": "qwen3.7-text-embedding",
+      "name": "Qwen3.7 Text Embedding",
+      "display_name": "Qwen3.7 Text Embedding",
+      "family": "qwen-retrieval",
+      "type": "embedding",
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "embedding"
+        ]
+      },
+      "metadata": {
+        "upstream_source": "https://help.aliyun.com/zh/model-studio/qwen3-7-text-embedding",
+        "verified_at": "2026-10-10",
+        "availability": "active",
+        "pricing_source": "https://www.alibabacloud.com/help/en/model-studio/qwen3-7-text-embedding",
+        "pricing_note": "Singapore USD per million input tokens.",
+        "billing_unit": "input_tokens",
+        "embedding_dimensions": "[256,512,768,1024,1536,2048,2560]",
+        "default_embedding_dimensions": "1024",
+        "max_batch_size": "20",
+        "max_input_tokens": "128000",
+        "catalog_reviewed_at": "2026-10-10",
+        "lifecycle_status": "active",
+        "pricing_status": "reference",
+        "call_support_scope": "text-only",
+        "embedding_space": "qwen3.7-text-embedding",
+        "embedding_note": "Text calls only; changing models requires an explicitly compatible vector space or rebuilding the index."
+      },
+      "limit": {
+        "context": 131072
+      },
+      "cost": {
+        "input": 0.07
+      },
+      "reasoning": {
+        "supported": false
+      },
+      "tool_call": false,
+      "temperature": false,
+      "category": "qwen",
+      "last_updated": "2026-10-10",
+      "supported_parameters": []
+    },
+    {
+      "id": "qwen3.8-omni-flash",
+      "name": "Qwen3.8 Omni Flash",
+      "display_name": "Qwen3.8 Omni Flash",
+      "family": "qwen-omni",
+      "type": "chat",
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "audio",
+          "video"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "metadata": {
+        "upstream_source": "https://help.aliyun.com/zh/model-studio/qwen3-8-omni-flash",
+        "verified_at": "2026-10-10",
+        "availability": "active",
+        "reasoning_effort_options": "none,minimal,low,medium,high,xhigh,max",
+        "reasoning_effort_default": "xhigh",
+        "reasoning_source": "https://help.aliyun.com/zh/model-studio/qwen-api-via-openai-chat-completions/",
+        "context_evidence_note": "Current directly opened individual model page states 1M context and 131072 output. Earlier observed 65536/16384 values were not reproduced in this verification.",
+        "previously_observed_context_conflict": "Earlier research reported 65536 context/16384 output; current model page supersedes that observation.",
+        "max_input_tokens": "991808",
+        "max_input_tokens_thinking": "983616",
+        "pricing_source": "https://www.alibabacloud.com/help/en/model-studio/model-pricing",
+        "pricing_note": "Singapore international USD per million tokens.",
+        "catalog_reviewed_at": "2026-10-10",
+        "lifecycle_status": "active",
+        "reasoning_supported": "true",
+        "reasoning_default": "true",
+        "endpoints": "chat/completions",
+        "max_output_tokens": "131072",
+        "pricing_status": "reference"
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 131072
+      },
+      "cost": {
+        "input": 0.15,
+        "output": 0.47,
+        "cache_read": 0.016
+      },
+      "reasoning": {
+        "supported": true,
+        "default": true
+      },
+      "tool_call": true,
+      "category": "qwen",
+      "last_updated": "2026-10-10",
+      "supported_parameters": [
+        "max_tokens"
+      ],
+      "endpoints": "chat/completions",
+      "reasoning_options": [
+        {
+          "type": "effort",
+          "values": [
+            "none",
+            "minimal",
+            "low",
+            "medium",
+            "high",
+            "xhigh",
+            "max"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "qwen3.7-flash",
+      "name": "Qwen3.7 Flash",
+      "display_name": "Qwen3.7 Flash",
+      "family": "qwen",
+      "type": "chat",
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "metadata": {
+        "upstream_source": "https://help.aliyun.com/zh/model-studio/qwen3-7-flash",
+        "verified_at": "2026-10-10",
+        "availability": "active",
+        "pricing_status": "unverified",
+        "pricing_source": "https://www.alibabacloud.com/help/en/model-studio/model-pricing",
+        "original_currency": "USD",
+        "original_unit": "per_million_tokens",
+        "pricing_tiers": "[{\"input_tokens_lte\":32000,\"input\":0.03,\"output\":0.13},{\"input_tokens_lte\":256000,\"input\":0.1,\"output\":0.4},{\"input_tokens_lte\":1000000,\"input\":0.2,\"output\":0.8}]",
+        "pricing_note": "Entire request uses the tier selected by total input tokens. Do not flatten to the cheapest tier.",
+        "max_input_tokens": "991808",
+        "max_reasoning_tokens": "262144",
+        "catalog_reviewed_at": "2026-10-10",
+        "lifecycle_status": "active",
+        "reasoning_supported": "true",
+        "endpoints": "chat/completions",
+        "max_output_tokens": "131072"
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 131072
+      },
+      "reasoning": {
+        "supported": true
+      },
+      "tool_call": true,
+      "category": "qwen",
+      "last_updated": "2026-10-10",
+      "supported_parameters": [
+        "max_tokens"
+      ],
+      "endpoints": "chat/completions"
+    },
+    {
+      "id": "qwen3.8-27b",
+      "name": "Qwen3.8 27B",
+      "display_name": "Qwen3.8 27B",
+      "family": "qwen",
+      "type": "chat",
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "metadata": {
+        "upstream_source": "https://help.aliyun.com/zh/model-studio/qwen3-8-27b",
+        "verified_at": "2026-10-10",
+        "availability": "active",
+        "reasoning_effort_options": "none,minimal,low,medium,high,xhigh,max",
+        "reasoning_effort_default": "xhigh",
+        "reasoning_note": "Native efforts low/medium/xhigh; minimal maps to low, high/max to xhigh, none disables thinking. Cannot combine reasoning_effort and thinking_budget.",
+        "reasoning_source": "https://help.aliyun.com/zh/model-studio/qwen-api-via-openai-chat-completions/",
+        "max_input_tokens": "991808",
+        "max_input_tokens_thinking": "983616",
+        "max_reasoning_tokens": "262144",
+        "pricing_source": "https://www.alibabacloud.com/help/en/model-studio/model-pricing",
+        "pricing_note": "Singapore international USD per million tokens; not China/global deployment rates.",
+        "catalog_reviewed_at": "2026-10-10",
+        "lifecycle_status": "active",
+        "reasoning_supported": "true",
+        "endpoints": "chat/completions",
+        "max_output_tokens": "131072",
+        "pricing_status": "reference"
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 131072
+      },
+      "cost": {
+        "input": 0.5,
+        "output": 3
+      },
+      "reasoning": {
+        "supported": true
+      },
+      "tool_call": true,
+      "category": "qwen",
+      "last_updated": "2026-10-10",
+      "supported_parameters": [
+        "max_tokens"
+      ],
+      "endpoints": "chat/completions",
+      "reasoning_options": [
+        {
+          "type": "effort",
+          "values": [
+            "none",
+            "minimal",
+            "low",
+            "medium",
+            "high",
+            "xhigh",
+            "max"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-flash",
+      "name": "Qwen3.8 Flash",
+      "display_name": "Qwen3.8 Flash",
+      "family": "qwen",
+      "type": "chat",
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "metadata": {
+        "upstream_source": "https://help.aliyun.com/zh/model-studio/qwen3-8-flash",
+        "verified_at": "2026-10-10",
+        "availability": "active",
+        "reasoning_effort_options": "none,minimal,low,medium,high,xhigh,max",
+        "reasoning_effort_default": "xhigh",
+        "reasoning_note": "Native efforts low/medium/xhigh; minimal maps to low, high/max to xhigh, none disables thinking. Cannot combine reasoning_effort and thinking_budget.",
+        "reasoning_source": "https://help.aliyun.com/zh/model-studio/qwen-api-via-openai-chat-completions/",
+        "max_input_tokens": "991808",
+        "max_input_tokens_thinking": "983616",
+        "max_reasoning_tokens": "262144",
+        "reasoning_history_note": "preserve_thinking defaults true; retain historical reasoning_content in its original field.",
+        "pricing_source": "https://www.alibabacloud.com/help/en/model-studio/model-pricing",
+        "pricing_note": "Singapore international USD per million tokens; not China/global deployment rates.",
+        "catalog_reviewed_at": "2026-10-10",
+        "lifecycle_status": "active",
+        "reasoning_supported": "true",
+        "endpoints": "chat/completions",
+        "max_output_tokens": "131072",
+        "pricing_status": "reference"
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 131072
+      },
+      "cost": {
+        "input": 0.15,
+        "output": 0.47
+      },
+      "reasoning": {
+        "supported": true
+      },
+      "tool_call": true,
+      "category": "qwen",
+      "last_updated": "2026-10-10",
+      "supported_parameters": [
+        "max_tokens"
+      ],
+      "endpoints": "chat/completions",
+      "reasoning_options": [
+        {
+          "type": "effort",
+          "values": [
+            "none",
+            "minimal",
+            "low",
+            "medium",
+            "high",
+            "xhigh",
+            "max"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-max-0902",
+      "name": "Qwen3.8 Max 0902",
+      "display_name": "Qwen3.8 Max 0902",
+      "family": "qwen",
+      "type": "chat",
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "metadata": {
+        "upstream_source": "https://help.aliyun.com/zh/model-studio/qwen3-8-max",
+        "verified_at": "2026-10-10",
+        "availability": "active",
+        "reasoning_effort_options": "none,minimal,low,medium,high,xhigh,max",
+        "reasoning_effort_default": "xhigh",
+        "reasoning_note": "Native efforts low/medium/xhigh; minimal maps to low, high/max to xhigh, none disables thinking. Cannot combine reasoning_effort and thinking_budget.",
+        "reasoning_source": "https://help.aliyun.com/zh/model-studio/qwen-api-via-openai-chat-completions/",
+        "max_input_tokens": "991808",
+        "max_input_tokens_thinking": "983616",
+        "max_reasoning_tokens": "262144",
+        "pricing_source": "https://www.alibabacloud.com/help/en/model-studio/model-pricing",
+        "pricing_note": "Singapore international USD per million tokens; not China/global deployment rates.",
+        "catalog_reviewed_at": "2026-10-10",
+        "lifecycle_status": "active",
+        "reasoning_supported": "true",
+        "endpoints": "chat/completions",
+        "max_output_tokens": "131072",
+        "pricing_status": "reference"
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 131072
+      },
+      "cost": {
+        "input": 2,
+        "output": 6
+      },
+      "reasoning": {
+        "supported": true
+      },
+      "tool_call": true,
+      "category": "qwen",
+      "last_updated": "2026-10-10",
+      "supported_parameters": [
+        "max_tokens"
+      ],
+      "endpoints": "chat/completions",
+      "reasoning_options": [
+        {
+          "type": "effort",
+          "values": [
+            "none",
+            "minimal",
+            "low",
+            "medium",
+            "high",
+            "xhigh",
+            "max"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "qwen3.8-max",
+      "name": "Qwen3.8 Max",
+      "display_name": "Qwen3.8 Max",
+      "family": "qwen",
+      "type": "chat",
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "metadata": {
+        "upstream_source": "https://help.aliyun.com/zh/model-studio/qwen3-8-max",
+        "verified_at": "2026-10-10",
+        "availability": "active",
+        "reasoning_effort_options": "none,minimal,low,medium,high,xhigh,max",
+        "reasoning_effort_default": "xhigh",
+        "reasoning_note": "Native efforts low/medium/xhigh; minimal maps to low, high/max to xhigh, none disables thinking. Cannot combine reasoning_effort and thinking_budget.",
+        "reasoning_source": "https://help.aliyun.com/zh/model-studio/qwen-api-via-openai-chat-completions/",
+        "max_input_tokens": "991808",
+        "max_input_tokens_thinking": "983616",
+        "max_reasoning_tokens": "262144",
+        "reasoning_history_note": "preserve_thinking defaults true; retain historical reasoning_content in its original field.",
+        "pricing_source": "https://www.alibabacloud.com/help/en/model-studio/model-pricing",
+        "pricing_note": "Singapore international USD per million tokens; not China/global deployment rates.",
+        "catalog_reviewed_at": "2026-10-10",
+        "lifecycle_status": "active",
+        "reasoning_supported": "true",
+        "endpoints": "chat/completions",
+        "max_output_tokens": "131072",
+        "pricing_status": "reference"
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 131072
+      },
+      "cost": {
+        "input": 2,
+        "output": 6
+      },
+      "reasoning": {
+        "supported": true
+      },
+      "tool_call": true,
+      "category": "qwen",
+      "last_updated": "2026-10-10",
+      "supported_parameters": [
+        "max_tokens"
+      ],
+      "endpoints": "chat/completions",
+      "reasoning_options": [
+        {
+          "type": "effort",
+          "values": [
+            "none",
+            "minimal",
+            "low",
+            "medium",
+            "high",
+            "xhigh",
+            "max"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "qwen3-omni-flash",
+      "name": "Qwen3-Omni Flash",
+      "family": "qwen",
+      "attachment": false,
+      "reasoning": {
+        "supported": true,
+        "default": true
+      },
+      "tool_call": true,
+      "temperature": true,
+      "knowledge": "2024-04",
+      "release_date": "2025-09-15",
+      "last_updated": "2025-09-15",
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "audio",
+          "video"
+        ],
+        "output": [
+          "text",
+          "audio"
+        ]
+      },
+      "open_weights": false,
+      "limit": {
+        "context": 65536,
+        "output": 16384
+      },
+      "cost": {
+        "input": 0.43,
+        "output": 1.66,
+        "input_audio": 3.81,
+        "output_audio": 15.11
+      },
+      "display_name": "Qwen3-Omni Flash",
+      "extra_capabilities": {
+        "reasoning": {
+          "supported": true,
+          "interleaved": true,
+          "summaries": true,
+          "visibility": "summary",
+          "continuation": [
+            "thinking_blocks"
+          ]
+        }
+      },
+      "type": "chat"
+    },
+    {
+      "id": "qwen3-coder-plus",
+      "name": "Qwen3 Coder Plus",
+      "family": "qwen",
+      "attachment": false,
+      "reasoning": {
+        "supported": false
+      },
+      "tool_call": true,
+      "temperature": true,
+      "knowledge": "2025-04",
+      "release_date": "2025-07-23",
+      "last_updated": "2025-07-23",
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "open_weights": true,
+      "limit": {
+        "context": 1000000,
+        "output": 65536
+      },
+      "cost": {
+        "input": 1,
+        "output": 5
+      },
+      "display_name": "Qwen3 Coder Plus",
+      "type": "chat"
+    },
+    {
+      "id": "qwen-plus",
+      "name": "Qwen Plus",
+      "family": "qwen",
+      "attachment": false,
+      "reasoning": {
+        "supported": true,
+        "default": false,
+        "budget": {
+          "min": 0,
+          "max": 81920,
+          "default": 81920
+        }
+      },
+      "tool_call": true,
+      "temperature": true,
+      "knowledge": "2024-04",
+      "release_date": "2024-01-25",
+      "last_updated": "2025-09-11",
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "open_weights": false,
+      "limit": {
+        "context": 1000000,
+        "output": 32768
+      },
+      "cost": {
+        "input": 0.4,
+        "output": 1.2,
+        "reasoning": 4
+      },
+      "display_name": "Qwen Plus",
+      "extra_capabilities": {
+        "reasoning": {
+          "supported": true,
+          "interleaved": true,
+          "summaries": true,
+          "visibility": "summary",
+          "continuation": [
+            "thinking_blocks"
+          ]
+        }
+      },
+      "search": {
+        "supported": true,
+        "default": false,
+        "forced_search": false,
+        "search_strategy": "turbo"
+      },
+      "type": "chat"
+    },
+    {
+      "id": "qwen3-coder-30b-a3b-instruct",
+      "name": "Qwen3-Coder 30B-A3B Instruct",
+      "family": "qwen",
+      "attachment": false,
+      "reasoning": {
+        "supported": false
+      },
+      "tool_call": true,
+      "temperature": true,
+      "knowledge": "2025-04",
+      "release_date": "2025-04",
+      "last_updated": "2025-04",
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "open_weights": true,
+      "limit": {
+        "context": 262144,
+        "output": 65536
+      },
+      "cost": {
+        "input": 0.45,
+        "output": 2.25
+      },
+      "display_name": "Qwen3-Coder 30B-A3B Instruct",
+      "type": "chat"
+    },
+    {
+      "id": "qwen3-omni-flash-realtime",
+      "name": "Qwen3-Omni Flash Realtime",
+      "family": "qwen",
+      "attachment": false,
+      "reasoning": {
+        "supported": false
+      },
+      "tool_call": true,
+      "temperature": true,
+      "knowledge": "2024-04",
+      "release_date": "2025-09-15",
+      "last_updated": "2025-09-15",
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "audio",
+          "video"
+        ],
+        "output": [
+          "text",
+          "audio"
+        ]
+      },
+      "open_weights": false,
+      "limit": {
+        "context": 65536,
+        "output": 16384
+      },
+      "cost": {
+        "input": 0.52,
+        "output": 1.99,
+        "input_audio": 4.57,
+        "output_audio": 18.13
+      },
+      "display_name": "Qwen3-Omni Flash Realtime",
+      "type": "chat"
+    },
+    {
+      "id": "qwen3-32b",
+      "name": "Qwen3 32B",
+      "family": "qwen",
+      "attachment": false,
+      "reasoning": {
+        "supported": true,
+        "default": true,
+        "budget": {
+          "min": 0,
+          "max": 38912,
+          "default": 38912
+        }
+      },
+      "tool_call": true,
+      "temperature": true,
+      "knowledge": "2025-04",
+      "release_date": "2025-04",
+      "last_updated": "2025-04",
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "open_weights": true,
+      "limit": {
+        "context": 131072,
+        "output": 16384
+      },
+      "cost": {
+        "input": 0.7,
+        "output": 2.8,
+        "reasoning": 8.4
+      },
+      "display_name": "Qwen3 32B",
+      "extra_capabilities": {
+        "reasoning": {
+          "supported": true,
+          "interleaved": true,
+          "summaries": true,
+          "visibility": "summary",
+          "continuation": [
+            "thinking_blocks"
+          ]
+        }
+      },
+      "type": "chat"
+    },
+    {
+      "id": "qwen-omni-turbo-realtime",
+      "name": "Qwen-Omni Turbo Realtime",
+      "family": "qwen",
+      "attachment": false,
+      "reasoning": {
+        "supported": false
+      },
+      "tool_call": true,
+      "temperature": true,
+      "knowledge": "2024-04",
+      "release_date": "2025-05-08",
+      "last_updated": "2025-05-08",
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "audio"
+        ],
+        "output": [
+          "text",
+          "audio"
+        ]
+      },
+      "open_weights": false,
+      "limit": {
+        "context": 32768,
+        "output": 2048
+      },
+      "cost": {
+        "input": 0.27,
+        "output": 1.07,
+        "input_audio": 4.44,
+        "output_audio": 8.89
+      },
+      "display_name": "Qwen-Omni Turbo Realtime",
+      "type": "chat"
+    },
+    {
+      "id": "qwen-plus-character-ja",
+      "name": "Qwen Plus Character (Japanese)",
+      "family": "qwen",
+      "attachment": false,
+      "reasoning": {
+        "supported": false
+      },
+      "tool_call": true,
+      "temperature": true,
+      "knowledge": "2024-04",
+      "release_date": "2024-01",
+      "last_updated": "2024-01",
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "open_weights": false,
+      "limit": {
+        "context": 8192,
+        "output": 512
+      },
+      "cost": {
+        "input": 0.5,
+        "output": 1.4
+      },
+      "display_name": "Qwen Plus Character (Japanese)",
+      "type": "chat"
+    },
+    {
+      "id": "qwen3-next-80b-a3b-instruct",
+      "name": "Qwen3 Next 80B A3B Instruct",
+      "family": "qwen",
+      "attachment": false,
+      "reasoning": {
+        "supported": false
+      },
+      "tool_call": true,
+      "temperature": true,
+      "knowledge": "2025-04",
+      "release_date": "2025-09",
+      "last_updated": "2025-09",
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "open_weights": true,
+      "limit": {
+        "context": 131072,
+        "output": 32768
+      },
+      "cost": {
+        "input": 0.5,
+        "output": 2
+      },
+      "display_name": "Qwen3 Next 80B A3B Instruct",
+      "type": "chat"
+    },
+    {
+      "id": "qwen3.7-plus",
+      "name": "Qwen3.7 Plus",
+      "family": "qwen",
+      "attachment": false,
+      "reasoning": {
+        "supported": true,
+        "default": true
+      },
+      "tool_call": true,
+      "temperature": true,
+      "knowledge": "2025-04",
+      "release_date": "2026-06-02",
+      "last_updated": "2026-06-04",
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "open_weights": false,
+      "limit": {
+        "context": 1000000,
+        "output": 65536
+      },
+      "display_name": "Qwen3.7 Plus",
+      "extra_capabilities": {
+        "reasoning": {
+          "supported": true
+        }
+      },
+      "type": "chat",
+      "metadata": {
+        "upstream_source": "https://help.aliyun.com/zh/model-studio/text-generation-model",
+        "verified_at": "2026-10-10",
+        "catalog_reviewed_at": "2026-10-10",
+        "pricing_status": "unverified",
+        "pricing_note": "Reference only: confirm current regional pricing before publishing.",
+        "availability": "active"
+      },
+      "category": "qwen"
+    },
+    {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen3.6 35B-A3B",
+      "family": "qwen",
+      "attachment": true,
+      "reasoning": {
+        "supported": true,
+        "default": true
+      },
+      "tool_call": true,
+      "structured_output": true,
+      "temperature": true,
+      "release_date": "2026-04-17",
+      "last_updated": "2026-04-17",
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video",
+          "audio"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "open_weights": true,
+      "limit": {
+        "context": 262144,
+        "output": 65536
+      },
+      "cost": {
+        "input": 0.248,
+        "output": 1.485
+      },
+      "display_name": "Qwen3.6 35B-A3B",
+      "extra_capabilities": {
+        "reasoning": {
+          "supported": true,
+          "interleaved": true,
+          "summaries": true,
+          "visibility": "summary",
+          "continuation": [
+            "thinking_blocks"
+          ]
+        }
+      },
+      "type": "chat"
+    },
+    {
+      "id": "qwen3.7-max",
+      "name": "Qwen3.7 Max",
+      "family": "qwen",
+      "attachment": false,
+      "reasoning": {
+        "supported": true,
+        "default": true
+      },
+      "tool_call": true,
+      "temperature": true,
+      "release_date": "2026-05-21",
+      "last_updated": "2026-05-21",
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "open_weights": false,
+      "limit": {
+        "context": 1000000,
+        "output": 65536
+      },
+      "cost": {
+        "input": 2.5,
+        "output": 7.5,
+        "cache_read": 0.5,
+        "cache_write": 3.125
+      },
+      "display_name": "Qwen3.7 Max",
+      "extra_capabilities": {
+        "reasoning": {
+          "supported": true
+        }
+      },
+      "type": "chat"
+    },
+    {
+      "id": "qwen3-max",
+      "name": "Qwen3 Max",
+      "family": "qwen",
+      "attachment": false,
+      "reasoning": {
+        "supported": true
+      },
+      "tool_call": true,
+      "temperature": true,
+      "knowledge": "2025-04",
+      "release_date": "2025-09-23",
+      "last_updated": "2025-09-23",
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "open_weights": false,
+      "limit": {
+        "context": 262144,
+        "output": 65536
+      },
+      "cost": {
+        "input": 1.2,
+        "output": 6
+      },
+      "display_name": "Qwen3 Max",
+      "extra_capabilities": {
+        "reasoning": {
+          "supported": true,
+          "interleaved": true,
+          "summaries": true,
+          "visibility": "summary",
+          "continuation": [
+            "thinking_blocks"
+          ]
+        }
+      },
+      "type": "chat"
+    },
+    {
+      "id": "qwen2-5-omni-7b",
+      "name": "Qwen2.5-Omni 7B",
+      "family": "qwen",
+      "attachment": false,
+      "reasoning": {
+        "supported": false
+      },
+      "tool_call": true,
+      "temperature": true,
+      "knowledge": "2024-04",
+      "release_date": "2024-12",
+      "last_updated": "2024-12",
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "audio",
+          "video"
+        ],
+        "output": [
+          "text",
+          "audio"
+        ]
+      },
+      "open_weights": true,
+      "limit": {
+        "context": 32768,
+        "output": 2048
+      },
+      "cost": {
+        "input": 0.1,
+        "output": 0.4,
+        "input_audio": 6.76
+      },
+      "display_name": "Qwen2.5-Omni 7B",
+      "type": "chat"
+    },
+    {
+      "id": "qwen3-8b",
+      "name": "Qwen3 8B",
+      "family": "qwen",
+      "attachment": false,
+      "reasoning": {
+        "supported": true,
+        "default": true,
+        "budget": {
+          "min": 0,
+          "max": 38912,
+          "default": 38912
+        }
+      },
+      "tool_call": true,
+      "temperature": true,
+      "knowledge": "2025-04",
+      "release_date": "2025-04",
+      "last_updated": "2025-04",
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "open_weights": true,
+      "limit": {
+        "context": 131072,
+        "output": 8192
+      },
+      "cost": {
+        "input": 0.18,
+        "output": 0.7,
+        "reasoning": 2.1
+      },
+      "display_name": "Qwen3 8B",
+      "extra_capabilities": {
+        "reasoning": {
+          "supported": true,
+          "interleaved": true,
+          "summaries": true,
+          "visibility": "summary",
+          "continuation": [
+            "thinking_blocks"
+          ]
+        }
+      },
+      "type": "chat"
+    },
+    {
+      "id": "qwen2-5-14b-instruct",
+      "name": "Qwen2.5 14B Instruct",
+      "family": "qwen",
+      "attachment": false,
+      "reasoning": {
+        "supported": false
+      },
+      "tool_call": true,
+      "temperature": true,
+      "knowledge": "2024-04",
+      "release_date": "2024-09",
+      "last_updated": "2024-09",
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "open_weights": true,
+      "limit": {
+        "context": 131072,
+        "output": 8192
+      },
+      "cost": {
+        "input": 0.35,
+        "output": 1.4
+      },
+      "display_name": "Qwen2.5 14B Instruct",
+      "type": "chat"
+    },
+    {
+      "id": "qwen3-next-80b-a3b-thinking",
+      "name": "Qwen3 Next 80B A3B Thinking",
+      "family": "qwen",
+      "attachment": false,
+      "reasoning": {
+        "supported": true,
+        "default": true,
+        "budget": {
+          "min": 0,
+          "max": 81920,
+          "default": 81920
+        }
+      },
+      "tool_call": false,
+      "temperature": true,
+      "knowledge": "2025-04",
+      "release_date": "2025-09",
+      "last_updated": "2025-09",
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "open_weights": true,
+      "limit": {
+        "context": 131072,
+        "output": 32768
+      },
+      "cost": {
+        "input": 0.5,
+        "output": 6
+      },
+      "display_name": "Qwen3 Next 80B A3B Thinking",
+      "extra_capabilities": {
+        "reasoning": {
+          "supported": true,
+          "interleaved": true,
+          "summaries": true,
+          "visibility": "summary",
+          "continuation": [
+            "thinking_blocks"
+          ]
+        }
+      },
+      "type": "chat"
+    },
+    {
+      "id": "qvq-max",
+      "name": "QVQ Max",
+      "family": "qvq",
+      "attachment": false,
+      "reasoning": {
+        "supported": true,
+        "default": true
+      },
+      "tool_call": true,
+      "temperature": true,
+      "knowledge": "2024-04",
+      "release_date": "2025-03-25",
+      "last_updated": "2025-03-25",
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "open_weights": false,
+      "limit": {
+        "context": 131072,
+        "output": 8192
+      },
+      "cost": {
+        "input": 1.2,
+        "output": 4.8
+      },
+      "display_name": "QVQ Max",
+      "type": "chat"
+    },
+    {
+      "id": "qwen3.6-flash",
+      "name": "Qwen3.6 Flash",
+      "family": "qwen3.6",
+      "attachment": true,
+      "reasoning": {
+        "supported": true,
+        "default": true
+      },
+      "tool_call": true,
+      "structured_output": true,
+      "temperature": true,
+      "release_date": "2026-04-27",
+      "last_updated": "2026-04-27",
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "open_weights": false,
+      "limit": {
+        "context": 1000000,
+        "output": 65536
+      },
+      "cost": {
+        "input": 0.1875,
+        "output": 1.125,
+        "cache_write": 0.234375
+      },
+      "display_name": "Qwen3.6 Flash",
+      "extra_capabilities": {
+        "reasoning": {
+          "supported": true,
+          "interleaved": true,
+          "summaries": true,
+          "visibility": "summary",
+          "continuation": [
+            "thinking_blocks"
+          ]
+        }
+      },
+      "type": "chat"
+    },
+    {
+      "id": "qwen2-5-vl-72b-instruct",
+      "name": "Qwen2.5-VL 72B Instruct",
+      "family": "qwen",
+      "attachment": false,
+      "reasoning": {
+        "supported": false
+      },
+      "tool_call": true,
+      "temperature": true,
+      "knowledge": "2024-04",
+      "release_date": "2024-09",
+      "last_updated": "2024-09",
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "open_weights": true,
+      "limit": {
+        "context": 131072,
+        "output": 8192
+      },
+      "cost": {
+        "input": 2.8,
+        "output": 8.4
+      },
+      "display_name": "Qwen2.5-VL 72B Instruct",
+      "type": "chat"
+    },
+    {
+      "id": "qwen3-vl-plus",
+      "name": "Qwen3 VL Plus",
+      "family": "qwen",
+      "attachment": false,
+      "reasoning": {
+        "supported": true,
+        "default": false,
+        "budget": {
+          "min": 0,
+          "max": 81920,
+          "default": 81920
+        }
+      },
+      "tool_call": false,
+      "temperature": true,
+      "knowledge": "2025-04",
+      "release_date": "2025-09-23",
+      "last_updated": "2025-09-23",
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "open_weights": false,
+      "limit": {
+        "context": 262144,
+        "output": 32768
+      },
+      "cost": {
+        "input": 0.2,
+        "output": 1.6,
+        "reasoning": 4.8
+      },
+      "display_name": "Qwen3 VL Plus",
+      "extra_capabilities": {
+        "reasoning": {
+          "supported": true,
+          "interleaved": true,
+          "summaries": true,
+          "visibility": "summary",
+          "continuation": [
+            "thinking_blocks"
+          ]
+        }
+      },
+      "type": "chat"
+    },
+    {
+      "id": "qwen-vl-ocr",
+      "name": "Qwen Vl Ocr",
+      "family": "qwen",
+      "attachment": false,
+      "reasoning": {
+        "supported": false
+      },
+      "tool_call": false,
+      "temperature": true,
+      "knowledge": "2024-04",
+      "release_date": "2024-10-28",
+      "last_updated": "2025-04-13",
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "open_weights": false,
+      "limit": {
+        "context": 34096,
+        "output": 4096
+      },
+      "cost": {
+        "input": 0.72,
+        "output": 0.72
+      },
+      "display_name": "Qwen Vl Ocr",
+      "type": "chat"
+    },
+    {
+      "id": "qwen-mt-turbo",
+      "name": "Qwen Mt Turbo",
+      "family": "qwen",
+      "attachment": false,
+      "reasoning": {
+        "supported": false
+      },
+      "tool_call": false,
+      "temperature": true,
+      "knowledge": "2024-04",
+      "release_date": "2025-01",
+      "last_updated": "2025-01",
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "open_weights": false,
+      "limit": {
+        "context": 16384,
+        "output": 8192
+      },
+      "cost": {
+        "input": 0.16,
+        "output": 0.49
+      },
+      "display_name": "Qwen Mt Turbo",
+      "type": "chat"
+    },
+    {
+      "id": "qwen-mt-plus",
+      "name": "Qwen Mt Plus",
+      "family": "qwen",
+      "attachment": false,
+      "reasoning": {
+        "supported": false
+      },
+      "tool_call": false,
+      "temperature": true,
+      "knowledge": "2024-04",
+      "release_date": "2025-01",
+      "last_updated": "2025-01",
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "open_weights": false,
+      "limit": {
+        "context": 16384,
+        "output": 8192
+      },
+      "cost": {
+        "input": 2.46,
+        "output": 7.37
+      },
+      "display_name": "Qwen Mt Plus",
+      "type": "chat"
+    },
+    {
+      "id": "qwen3.5-plus",
+      "name": "Qwen3.5 Plus",
+      "family": "qwen",
+      "attachment": false,
+      "reasoning": {
+        "supported": true,
+        "default": true
+      },
+      "tool_call": true,
+      "temperature": true,
+      "knowledge": "2025-04",
+      "release_date": "2026-02-16",
+      "last_updated": "2026-02-16",
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "open_weights": false,
+      "limit": {
+        "context": 1000000,
+        "output": 65536
+      },
+      "cost": {
+        "input": 0.4,
+        "output": 2.4,
+        "reasoning": 2.4
+      },
+      "display_name": "Qwen3.5 Plus",
+      "extra_capabilities": {
+        "reasoning": {
+          "supported": true,
+          "interleaved": true,
+          "summaries": true,
+          "visibility": "summary",
+          "continuation": [
+            "thinking_blocks"
+          ]
+        }
+      },
+      "type": "chat"
+    },
+    {
+      "id": "qwen-omni-turbo",
+      "name": "Qwen-Omni Turbo",
+      "family": "qwen",
+      "attachment": false,
+      "reasoning": {
+        "supported": false
+      },
+      "tool_call": true,
+      "temperature": true,
+      "knowledge": "2024-04",
+      "release_date": "2025-01-19",
+      "last_updated": "2025-03-26",
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "audio",
+          "video"
+        ],
+        "output": [
+          "text",
+          "audio"
+        ]
+      },
+      "open_weights": false,
+      "limit": {
+        "context": 32768,
+        "output": 2048
+      },
+      "cost": {
+        "input": 0.07,
+        "output": 0.27,
+        "input_audio": 4.44,
+        "output_audio": 8.89
+      },
+      "display_name": "Qwen-Omni Turbo",
+      "type": "chat"
+    },
+    {
+      "id": "qwen2-5-72b-instruct",
+      "name": "Qwen2.5 72B Instruct",
+      "family": "qwen",
+      "attachment": false,
+      "reasoning": {
+        "supported": false
+      },
+      "tool_call": true,
+      "temperature": true,
+      "knowledge": "2024-04",
+      "release_date": "2024-09",
+      "last_updated": "2024-09",
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "open_weights": true,
+      "limit": {
+        "context": 131072,
+        "output": 8192
+      },
+      "cost": {
+        "input": 1.4,
+        "output": 5.6
+      },
+      "display_name": "Qwen2.5 72B Instruct",
+      "type": "chat"
+    },
+    {
+      "id": "qwen-flash",
+      "name": "Qwen Flash",
+      "family": "qwen",
+      "attachment": false,
+      "reasoning": {
+        "supported": true,
+        "default": false,
+        "budget": {
+          "min": 0,
+          "max": 81920,
+          "default": 81920
+        }
+      },
+      "tool_call": true,
+      "temperature": true,
+      "knowledge": "2024-04",
+      "release_date": "2025-07-28",
+      "last_updated": "2025-07-28",
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "open_weights": false,
+      "limit": {
+        "context": 1000000,
+        "output": 32768
+      },
+      "cost": {
+        "input": 0.05,
+        "output": 0.4
+      },
+      "display_name": "Qwen Flash",
+      "extra_capabilities": {
+        "reasoning": {
+          "supported": true,
+          "interleaved": true,
+          "summaries": true,
+          "visibility": "summary",
+          "continuation": [
+            "thinking_blocks"
+          ]
+        }
+      },
+      "search": {
+        "supported": true,
+        "default": false,
+        "forced_search": false,
+        "search_strategy": "turbo"
+      },
+      "type": "chat"
+    },
+    {
+      "id": "qwen3-vl-235b-a22b",
+      "name": "Qwen3-VL 235B-A22B",
+      "family": "qwen",
+      "attachment": false,
+      "reasoning": {
+        "supported": true,
+        "default": true
+      },
+      "tool_call": true,
+      "temperature": true,
+      "knowledge": "2025-04",
+      "release_date": "2025-04",
+      "last_updated": "2025-04",
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "open_weights": true,
+      "limit": {
+        "context": 131072,
+        "output": 32768
+      },
+      "cost": {
+        "input": 0.7,
+        "output": 2.8,
+        "reasoning": 8.4
+      },
+      "display_name": "Qwen3-VL 235B-A22B",
+      "extra_capabilities": {
+        "reasoning": {
+          "supported": true,
+          "interleaved": true,
+          "summaries": true,
+          "visibility": "summary",
+          "continuation": [
+            "thinking_blocks"
+          ]
+        }
+      },
+      "type": "chat"
+    },
+    {
+      "id": "qwen3-vl-30b-a3b",
+      "name": "Qwen3-VL 30B-A3B",
+      "family": "qwen",
+      "attachment": false,
+      "reasoning": {
+        "supported": true,
+        "default": true
+      },
+      "tool_call": true,
+      "temperature": true,
+      "knowledge": "2025-04",
+      "release_date": "2025-04",
+      "last_updated": "2025-04",
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "open_weights": true,
+      "limit": {
+        "context": 131072,
+        "output": 32768
+      },
+      "cost": {
+        "input": 0.2,
+        "output": 0.8,
+        "reasoning": 2.4
+      },
+      "display_name": "Qwen3-VL 30B-A3B",
+      "extra_capabilities": {
+        "reasoning": {
+          "supported": true,
+          "interleaved": true,
+          "summaries": true,
+          "visibility": "summary",
+          "continuation": [
+            "thinking_blocks"
+          ]
+        }
+      },
+      "type": "chat"
+    },
+    {
+      "id": "qwen-vl-max",
+      "name": "Qwen-VL Max",
+      "family": "qwen",
+      "attachment": false,
+      "reasoning": {
+        "supported": false
+      },
+      "tool_call": true,
+      "temperature": true,
+      "knowledge": "2024-04",
+      "release_date": "2024-04-08",
+      "last_updated": "2025-08-13",
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "open_weights": false,
+      "limit": {
+        "context": 131072,
+        "output": 8192
+      },
+      "cost": {
+        "input": 0.8,
+        "output": 3.2
+      },
+      "display_name": "Qwen-VL Max",
+      "type": "chat"
+    },
+    {
+      "id": "qwen3.5-27b",
+      "name": "Qwen3.5 27B",
+      "family": "qwen",
+      "attachment": true,
+      "reasoning": {
+        "supported": true,
+        "default": true
+      },
+      "tool_call": true,
+      "structured_output": true,
+      "temperature": true,
+      "release_date": "2026-02-23",
+      "last_updated": "2026-02-23",
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video",
+          "audio"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "open_weights": true,
+      "limit": {
+        "context": 262144,
+        "output": 65536
+      },
+      "cost": {
+        "input": 0.3,
+        "output": 2.4
+      },
+      "display_name": "Qwen3.5 27B",
+      "extra_capabilities": {
+        "reasoning": {
+          "supported": true,
+          "interleaved": true,
+          "summaries": true,
+          "visibility": "summary",
+          "continuation": [
+            "thinking_blocks"
+          ]
+        }
+      },
+      "type": "chat"
+    },
+    {
+      "id": "qwen-max",
+      "name": "Qwen Max",
+      "family": "qwen",
+      "attachment": false,
+      "reasoning": {
+        "supported": false
+      },
+      "tool_call": true,
+      "temperature": true,
+      "knowledge": "2024-04",
+      "release_date": "2024-04-03",
+      "last_updated": "2025-01-25",
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "open_weights": false,
+      "limit": {
+        "context": 32768,
+        "output": 8192
+      },
+      "cost": {
+        "input": 1.6,
+        "output": 6.4
+      },
+      "display_name": "Qwen Max",
+      "search": {
+        "supported": true,
+        "default": false,
+        "forced_search": false,
+        "search_strategy": "turbo"
+      },
+      "type": "chat"
+    },
+    {
+      "id": "qwen3-235b-a22b",
+      "name": "Qwen3 235B A22B",
+      "family": "qwen",
+      "attachment": false,
+      "reasoning": {
+        "supported": true,
+        "default": false,
+        "budget": {
+          "min": 0,
+          "max": 81920,
+          "default": 81920
+        }
+      },
+      "tool_call": true,
+      "temperature": true,
+      "knowledge": "2025-04",
+      "release_date": "2025-04",
+      "last_updated": "2025-04",
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "open_weights": true,
+      "limit": {
+        "context": 131072,
+        "output": 32768
+      },
+      "cost": {
+        "input": 0.7,
+        "output": 2.8,
+        "reasoning": 8.4
+      },
+      "display_name": "Qwen3 235B A22B",
+      "extra_capabilities": {
+        "reasoning": {
+          "supported": true,
+          "interleaved": true,
+          "summaries": true,
+          "visibility": "summary",
+          "continuation": [
+            "thinking_blocks"
+          ]
+        }
+      },
+      "type": "chat"
+    },
+    {
+      "id": "qwen3-livetranslate-flash-realtime",
+      "name": "Qwen3-LiveTranslate Flash Realtime",
+      "family": "qwen",
+      "attachment": false,
+      "reasoning": {
+        "supported": false
+      },
+      "tool_call": false,
+      "temperature": true,
+      "knowledge": "2024-04",
+      "release_date": "2025-09-22",
+      "last_updated": "2025-09-22",
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "audio",
+          "video"
+        ],
+        "output": [
+          "text",
+          "audio"
+        ]
+      },
+      "open_weights": false,
+      "limit": {
+        "context": 53248,
+        "output": 4096
+      },
+      "cost": {
+        "input": 10,
+        "output": 10,
+        "input_audio": 10,
+        "output_audio": 38
+      },
+      "display_name": "Qwen3-LiveTranslate Flash Realtime",
+      "type": "chat"
+    },
+    {
+      "id": "qwen3.6-27b",
+      "name": "Qwen3.6 27B",
+      "family": "qwen",
+      "attachment": true,
+      "reasoning": {
+        "supported": true,
+        "default": true
+      },
+      "tool_call": true,
+      "structured_output": true,
+      "temperature": true,
+      "release_date": "2026-04-22",
+      "last_updated": "2026-04-22",
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video",
+          "audio"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "open_weights": true,
+      "limit": {
+        "context": 262144,
+        "output": 65536
+      },
+      "cost": {
+        "input": 0.6,
+        "output": 3.6
+      },
+      "display_name": "Qwen3.6 27B",
+      "extra_capabilities": {
+        "reasoning": {
+          "supported": true,
+          "interleaved": true,
+          "summaries": true,
+          "visibility": "summary",
+          "continuation": [
+            "thinking_blocks"
+          ]
+        }
+      },
+      "type": "chat"
+    },
+    {
+      "id": "qwen3.5-35b-a3b",
+      "name": "Qwen3.5 35B-A3B",
+      "family": "qwen",
+      "attachment": true,
+      "reasoning": {
+        "supported": true,
+        "default": true
+      },
+      "tool_call": true,
+      "structured_output": true,
+      "temperature": true,
+      "release_date": "2026-02-23",
+      "last_updated": "2026-02-23",
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video",
+          "audio"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "open_weights": true,
+      "limit": {
+        "context": 262144,
+        "output": 65536
+      },
+      "cost": {
+        "input": 0.25,
+        "output": 2
+      },
+      "display_name": "Qwen3.5 35B-A3B",
+      "extra_capabilities": {
+        "reasoning": {
+          "supported": true,
+          "interleaved": true,
+          "summaries": true,
+          "visibility": "summary",
+          "continuation": [
+            "thinking_blocks"
+          ]
+        }
+      },
+      "type": "chat"
+    },
+    {
+      "id": "qwen3-coder-480b-a35b-instruct",
+      "name": "Qwen3-Coder 480B-A35B Instruct",
+      "family": "qwen",
+      "attachment": false,
+      "reasoning": {
+        "supported": false
+      },
+      "tool_call": true,
+      "temperature": true,
+      "knowledge": "2025-04",
+      "release_date": "2025-04",
+      "last_updated": "2025-04",
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "open_weights": true,
+      "limit": {
+        "context": 262144,
+        "output": 65536
+      },
+      "cost": {
+        "input": 1.5,
+        "output": 7.5
+      },
+      "display_name": "Qwen3-Coder 480B-A35B Instruct",
+      "type": "chat"
+    },
+    {
+      "id": "qwq-plus",
+      "name": "QwQ Plus",
+      "family": "qwen",
+      "attachment": false,
+      "reasoning": {
+        "supported": true,
+        "default": true,
+        "budget": {
+          "min": 0,
+          "max": 32768,
+          "default": 32768
+        }
+      },
+      "tool_call": false,
+      "temperature": true,
+      "knowledge": "2024-04",
+      "release_date": "2025-03-05",
+      "last_updated": "2025-03-05",
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "open_weights": false,
+      "limit": {
+        "context": 131072,
+        "output": 8192
+      },
+      "cost": {
+        "input": 0.8,
+        "output": 2.4
+      },
+      "display_name": "QwQ Plus",
+      "extra_capabilities": {
+        "reasoning": {
+          "supported": true,
+          "interleaved": true,
+          "summaries": true,
+          "visibility": "summary",
+          "continuation": [
+            "thinking_blocks"
+          ]
+        }
+      },
+      "search": {
+        "supported": true,
+        "default": false,
+        "forced_search": false,
+        "search_strategy": "turbo"
+      },
+      "type": "chat"
+    },
+    {
+      "id": "qwen2-5-32b-instruct",
+      "name": "Qwen2.5 32B Instruct",
+      "family": "qwen",
+      "attachment": false,
+      "reasoning": {
+        "supported": false
+      },
+      "tool_call": true,
+      "temperature": true,
+      "knowledge": "2024-04",
+      "release_date": "2024-09",
+      "last_updated": "2024-09",
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "open_weights": true,
+      "limit": {
+        "context": 131072,
+        "output": 8192
+      },
+      "cost": {
+        "input": 0.7,
+        "output": 2.8
+      },
+      "display_name": "Qwen2.5 32B Instruct",
+      "type": "chat"
+    },
+    {
+      "id": "qwen3.5-397b-a17b",
+      "name": "Qwen3.5 397B-A17B",
+      "family": "qwen",
+      "attachment": true,
+      "reasoning": {
+        "supported": true,
+        "default": true
+      },
+      "tool_call": true,
+      "structured_output": true,
+      "temperature": true,
+      "release_date": "2026-02-15",
+      "last_updated": "2026-02-15",
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video",
+          "audio"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "open_weights": true,
+      "limit": {
+        "context": 262144,
+        "output": 65536
+      },
+      "cost": {
+        "input": 0.6,
+        "output": 3.6
+      },
+      "display_name": "Qwen3.5 397B-A17B",
+      "extra_capabilities": {
+        "reasoning": {
+          "supported": true,
+          "interleaved": true,
+          "summaries": true,
+          "visibility": "summary",
+          "continuation": [
+            "thinking_blocks"
+          ]
+        }
+      },
+      "type": "chat"
+    },
+    {
+      "id": "qwen3-coder-flash",
+      "name": "Qwen3 Coder Flash",
+      "family": "qwen",
+      "attachment": false,
+      "reasoning": {
+        "supported": false
+      },
+      "tool_call": true,
+      "temperature": true,
+      "knowledge": "2025-04",
+      "release_date": "2025-07-28",
+      "last_updated": "2025-07-28",
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "open_weights": false,
+      "limit": {
+        "context": 1000000,
+        "output": 65536
+      },
+      "cost": {
+        "input": 0.3,
+        "output": 1.5
+      },
+      "display_name": "Qwen3 Coder Flash",
+      "type": "chat"
+    },
+    {
+      "id": "qwen3-14b",
+      "name": "Qwen3 14B",
+      "family": "qwen",
+      "attachment": false,
+      "reasoning": {
+        "supported": true,
+        "default": true,
+        "budget": {
+          "min": 0,
+          "max": 38912,
+          "default": 38912
+        }
+      },
+      "tool_call": true,
+      "temperature": true,
+      "knowledge": "2025-04",
+      "release_date": "2025-04",
+      "last_updated": "2025-04",
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "open_weights": true,
+      "limit": {
+        "context": 131072,
+        "output": 8192
+      },
+      "cost": {
+        "input": 0.35,
+        "output": 1.4,
+        "reasoning": 4.2
+      },
+      "display_name": "Qwen3 14B",
+      "extra_capabilities": {
+        "reasoning": {
+          "supported": true,
+          "interleaved": true,
+          "summaries": true,
+          "visibility": "summary",
+          "continuation": [
+            "thinking_blocks"
+          ]
+        }
+      },
+      "type": "chat"
+    },
+    {
+      "id": "qwen3-asr-flash",
+      "name": "Qwen3-ASR Flash",
+      "family": "qwen",
+      "attachment": false,
+      "reasoning": {
+        "supported": false
+      },
+      "tool_call": false,
+      "temperature": false,
+      "knowledge": "2024-04",
+      "release_date": "2025-09-08",
+      "last_updated": "2025-09-08",
+      "modalities": {
+        "input": [
+          "audio"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "open_weights": false,
+      "limit": {
+        "context": 53248,
+        "output": 4096
+      },
+      "cost": {
+        "input": 0.035,
+        "output": 0.035
+      },
+      "display_name": "Qwen3-ASR Flash",
+      "type": "chat"
+    },
+    {
+      "id": "qwen-turbo",
+      "name": "Qwen Turbo",
+      "family": "qwen",
+      "attachment": false,
+      "reasoning": {
+        "supported": true,
+        "default": false,
+        "budget": {
+          "min": 0,
+          "max": 38912,
+          "default": 38912
+        }
+      },
+      "tool_call": true,
+      "temperature": true,
+      "knowledge": "2024-04",
+      "release_date": "2024-11-01",
+      "last_updated": "2025-04-28",
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "open_weights": false,
+      "limit": {
+        "context": 131072,
+        "output": 16384
+      },
+      "cost": {
+        "input": 0.05,
+        "output": 0.2,
+        "reasoning": 0.5
+      },
+      "display_name": "Qwen Turbo",
+      "extra_capabilities": {
+        "reasoning": {
+          "supported": true,
+          "interleaved": true,
+          "summaries": true,
+          "visibility": "summary",
+          "continuation": [
+            "thinking_blocks"
+          ]
+        }
+      },
+      "search": {
+        "supported": true,
+        "default": false,
+        "forced_search": false,
+        "search_strategy": "turbo"
+      },
+      "type": "chat"
+    },
+    {
+      "id": "qwen2-5-7b-instruct",
+      "name": "Qwen2.5 7B Instruct",
+      "family": "qwen",
+      "attachment": false,
+      "reasoning": {
+        "supported": false
+      },
+      "tool_call": true,
+      "temperature": true,
+      "knowledge": "2024-04",
+      "release_date": "2024-09",
+      "last_updated": "2024-09",
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "open_weights": true,
+      "limit": {
+        "context": 131072,
+        "output": 8192
+      },
+      "cost": {
+        "input": 0.175,
+        "output": 0.7
+      },
+      "display_name": "Qwen2.5 7B Instruct",
+      "type": "chat"
+    },
+    {
+      "id": "qwen2-5-vl-7b-instruct",
+      "name": "Qwen2.5-VL 7B Instruct",
+      "family": "qwen",
+      "attachment": false,
+      "reasoning": {
+        "supported": false
+      },
+      "tool_call": true,
+      "temperature": true,
+      "knowledge": "2024-04",
+      "release_date": "2024-09",
+      "last_updated": "2024-09",
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "open_weights": true,
+      "limit": {
+        "context": 131072,
+        "output": 8192
+      },
+      "cost": {
+        "input": 0.35,
+        "output": 1.05
+      },
+      "display_name": "Qwen2.5-VL 7B Instruct",
+      "type": "chat"
+    },
+    {
+      "id": "qwen3.6-max-preview",
+      "name": "Qwen3.6 Max Preview",
+      "family": "qwen",
+      "attachment": false,
+      "reasoning": {
+        "supported": true,
+        "default": true
+      },
+      "tool_call": true,
+      "temperature": true,
+      "knowledge": "2025-04",
+      "release_date": "2026-04-20",
+      "last_updated": "2026-04-20",
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "open_weights": false,
+      "limit": {
+        "context": 262144,
+        "output": 65536
+      },
+      "cost": {
+        "input": 1.3,
+        "output": 7.8,
+        "cache_read": 0.13,
+        "cache_write": 1.625
+      },
+      "display_name": "Qwen3.6 Max Preview",
+      "extra_capabilities": {
+        "reasoning": {
+          "supported": true,
+          "interleaved": true,
+          "summaries": true,
+          "visibility": "summary",
+          "continuation": [
+            "thinking_blocks"
+          ]
+        }
+      },
+      "type": "chat"
+    },
+    {
+      "id": "qwen3.5-122b-a10b",
+      "name": "Qwen3.5 122B-A10B",
+      "family": "qwen",
+      "attachment": true,
+      "reasoning": {
+        "supported": true,
+        "default": true
+      },
+      "tool_call": true,
+      "structured_output": true,
+      "temperature": true,
+      "release_date": "2026-02-23",
+      "last_updated": "2026-02-23",
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video",
+          "audio"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "open_weights": true,
+      "limit": {
+        "context": 262144,
+        "output": 65536
+      },
+      "cost": {
+        "input": 0.4,
+        "output": 3.2
+      },
+      "display_name": "Qwen3.5 122B-A10B",
+      "extra_capabilities": {
+        "reasoning": {
+          "supported": true,
+          "interleaved": true,
+          "summaries": true,
+          "visibility": "summary",
+          "continuation": [
+            "thinking_blocks"
+          ]
+        }
+      },
+      "type": "chat"
+    },
+    {
+      "id": "qwen-vl-plus",
+      "name": "Qwen-VL Plus",
+      "family": "qwen",
+      "attachment": false,
+      "reasoning": {
+        "supported": false
+      },
+      "tool_call": true,
+      "temperature": true,
+      "knowledge": "2024-04",
+      "release_date": "2024-01-25",
+      "last_updated": "2025-08-15",
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "open_weights": false,
+      "limit": {
+        "context": 131072,
+        "output": 8192
+      },
+      "cost": {
+        "input": 0.21,
+        "output": 0.63
+      },
+      "display_name": "Qwen-VL Plus",
+      "type": "chat"
+    },
+    {
+      "id": "qwen3.6-plus",
+      "name": "Qwen3.6 Plus",
+      "family": "qwen",
+      "attachment": false,
+      "reasoning": {
+        "supported": true,
+        "default": true
+      },
+      "tool_call": true,
+      "temperature": true,
+      "knowledge": "2025-04",
+      "release_date": "2026-04-02",
+      "last_updated": "2026-04-02",
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "open_weights": false,
+      "limit": {
+        "context": 1000000,
+        "output": 65536
+      },
+      "cost": {
+        "input": 0.5,
+        "output": 3,
+        "cache_read": 0.05,
+        "cache_write": 0.625,
+        "tiers": [
+          {
+            "input": 2,
+            "output": 6,
+            "cache_read": 0.2,
+            "cache_write": 2.5,
+            "tier": {
+              "type": "context",
+              "size": 256000
+            }
+          }
+        ],
+        "context_over_200k": {
+          "input": 2,
+          "output": 6,
+          "cache_read": 0.2,
+          "cache_write": 2.5
+        }
+      },
+      "display_name": "Qwen3.6 Plus",
+      "extra_capabilities": {
+        "reasoning": {
+          "supported": true,
+          "interleaved": true,
+          "summaries": true,
+          "visibility": "summary",
+          "continuation": [
+            "thinking_blocks"
+          ]
+        }
+      },
+      "type": "chat"
+    },
+    {
+      "id": "qwen3-coder-plus-2025-09-23",
+      "name": "Qwen3 Coder Plus 2025 09 23",
+      "display_name": "Qwen3 Coder Plus 2025 09 23",
+      "temperature": true,
+      "attachment": false,
+      "tool_call": true,
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 65536
+      },
+      "reasoning": {
+        "supported": false
+      },
+      "type": "chat"
+    },
+    {
+      "id": "qwen3-coder-plus-2025-07-22",
+      "name": "Qwen3 Coder Plus 2025 07 22",
+      "display_name": "Qwen3 Coder Plus 2025 07 22",
+      "temperature": true,
+      "attachment": false,
+      "tool_call": true,
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 65536
+      },
+      "reasoning": {
+        "supported": false
+      },
+      "type": "chat"
+    },
+    {
+      "id": "qwen-vl-ocr-latest",
+      "name": "Qwen Vl Ocr Latest",
+      "display_name": "Qwen Vl Ocr Latest",
+      "temperature": true,
+      "attachment": false,
+      "tool_call": false,
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "limit": {
+        "context": 34096,
+        "output": 4096
+      },
+      "reasoning": {
+        "supported": false
+      },
+      "type": "chat"
+    },
+    {
+      "id": "qvq-max-2025-05-15",
+      "name": "Qvq Max 2025 05 15",
+      "display_name": "Qvq Max 2025 05 15",
+      "temperature": true,
+      "attachment": false,
+      "tool_call": false,
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "limit": {
+        "context": 131072,
+        "output": 8192
+      },
+      "reasoning": {
+        "supported": true,
+        "default": false,
+        "budget": {
+          "min": 0,
+          "max": 16384,
+          "default": 16384
+        }
+      },
+      "type": "chat"
+    },
+    {
+      "id": "qwen-long",
+      "name": "Qwen Long",
+      "display_name": "Qwen Long",
+      "temperature": true,
+      "attachment": false,
+      "tool_call": false,
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 8192
+      },
+      "reasoning": {
+        "supported": false
+      },
+      "type": "chat"
+    },
+    {
+      "id": "qwen-turbo-latest",
+      "name": "Qwen Turbo Latest",
+      "display_name": "Qwen Turbo Latest",
+      "temperature": true,
+      "attachment": false,
+      "tool_call": true,
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "limit": {
+        "context": 131072,
+        "output": 16384
+      },
+      "reasoning": {
+        "supported": true,
+        "default": false,
+        "budget": {
+          "min": 0,
+          "max": 38912,
+          "default": 38912
+        }
+      },
+      "search": {
+        "supported": true,
+        "default": false,
+        "forced_search": false,
+        "search_strategy": "turbo"
+      },
+      "extra_capabilities": {
+        "reasoning": {
+          "supported": true,
+          "interleaved": true,
+          "summaries": true,
+          "visibility": "summary",
+          "continuation": [
+            "thinking_blocks"
+          ]
+        }
+      },
+      "type": "chat"
+    },
+    {
+      "id": "qwen-turbo-2024-09-19",
+      "name": "Qwen Turbo 2024 09 19",
+      "display_name": "Qwen Turbo 2024 09 19",
+      "temperature": true,
+      "attachment": false,
+      "tool_call": true,
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "limit": {
+        "context": 131072,
+        "output": 8192
+      },
+      "reasoning": {
+        "supported": false
+      },
+      "type": "chat"
+    },
+    {
+      "id": "qwen-flash-2025-07-28",
+      "name": "Qwen Flash 2025 07 28",
+      "display_name": "Qwen Flash 2025 07 28",
+      "temperature": true,
+      "attachment": false,
+      "tool_call": true,
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 32768
+      },
+      "reasoning": {
+        "supported": true,
+        "default": false,
+        "budget": {
+          "min": 0,
+          "max": 81920,
+          "default": 81920
+        }
+      },
+      "search": {
+        "supported": true,
+        "default": false,
+        "forced_search": false,
+        "search_strategy": "turbo"
+      },
+      "extra_capabilities": {
+        "reasoning": {
+          "supported": true,
+          "interleaved": true,
+          "summaries": true,
+          "visibility": "summary",
+          "continuation": [
+            "thinking_blocks"
+          ]
+        }
+      },
+      "type": "chat"
+    },
+    {
+      "id": "qwen-plus-latest",
+      "name": "Qwen Plus Latest",
+      "display_name": "Qwen Plus Latest",
+      "temperature": true,
+      "attachment": false,
+      "tool_call": true,
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 32768
+      },
+      "reasoning": {
+        "supported": true,
+        "default": false,
+        "budget": {
+          "min": 0,
+          "max": 81920,
+          "default": 81920
+        }
+      },
+      "search": {
+        "supported": true,
+        "default": false,
+        "forced_search": false,
+        "search_strategy": "turbo"
+      },
+      "extra_capabilities": {
+        "reasoning": {
+          "supported": true,
+          "interleaved": true,
+          "summaries": true,
+          "visibility": "summary",
+          "continuation": [
+            "thinking_blocks"
+          ]
+        }
+      },
+      "type": "chat"
+    },
+    {
+      "id": "qwen-plus-2024-09-19",
+      "name": "Qwen Plus 2024 09 19",
+      "display_name": "Qwen Plus 2024 09 19",
+      "temperature": true,
+      "attachment": false,
+      "tool_call": true,
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "limit": {
+        "context": 131072,
+        "output": 8192
+      },
+      "reasoning": {
+        "supported": false
+      },
+      "type": "chat"
+    },
+    {
+      "id": "qwen-plus-2025-07-14",
+      "name": "Qwen Plus 2025 07 14",
+      "display_name": "Qwen Plus 2025 07 14",
+      "temperature": true,
+      "attachment": false,
+      "tool_call": true,
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "limit": {
+        "context": 131072,
+        "output": 16384
+      },
+      "reasoning": {
+        "supported": true,
+        "default": false,
+        "budget": {
+          "min": 0,
+          "max": 38912,
+          "default": 38912
+        }
+      },
+      "search": {
+        "supported": true,
+        "default": false,
+        "forced_search": false,
+        "search_strategy": "turbo"
+      },
+      "extra_capabilities": {
+        "reasoning": {
+          "supported": true,
+          "interleaved": true,
+          "summaries": true,
+          "visibility": "summary",
+          "continuation": [
+            "thinking_blocks"
+          ]
+        }
+      },
+      "type": "chat"
+    },
+    {
+      "id": "qwen-plus-2025-09-11",
+      "name": "Qwen Plus 2025 09 11",
+      "display_name": "Qwen Plus 2025 09 11",
+      "temperature": true,
+      "attachment": false,
+      "tool_call": true,
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "limit": {
+        "context": 1000000,
+        "output": 32768
+      },
+      "reasoning": {
+        "supported": true,
+        "default": false,
+        "budget": {
+          "min": 0,
+          "max": 81920,
+          "default": 81920
+        }
+      },
+      "search": {
+        "supported": true,
+        "default": false,
+        "forced_search": false,
+        "search_strategy": "turbo"
+      },
+      "extra_capabilities": {
+        "reasoning": {
+          "supported": true,
+          "interleaved": true,
+          "summaries": true,
+          "visibility": "summary",
+          "continuation": [
+            "thinking_blocks"
+          ]
+        }
+      },
+      "type": "chat"
+    },
+    {
+      "id": "qwen-max-latest",
+      "name": "Qwen Max Latest",
+      "display_name": "Qwen Max Latest",
+      "temperature": true,
+      "attachment": false,
+      "tool_call": true,
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "limit": {
+        "context": 131072,
+        "output": 8192
+      },
+      "reasoning": {
+        "supported": false
+      },
+      "search": {
+        "supported": true,
+        "default": false,
+        "forced_search": false,
+        "search_strategy": "turbo"
+      },
+      "type": "chat"
+    },
+    {
+      "id": "qwen-max-2024-09-19",
+      "name": "Qwen Max 2024 09 19",
+      "display_name": "Qwen Max 2024 09 19",
+      "temperature": true,
+      "attachment": false,
+      "tool_call": true,
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "limit": {
+        "context": 32768,
+        "output": 8192
+      },
+      "reasoning": {
+        "supported": false
+      },
+      "search": {
+        "supported": true,
+        "default": false,
+        "forced_search": false,
+        "search_strategy": "turbo"
+      },
+      "type": "chat"
+    },
+    {
+      "id": "qwen-max-2024-04-28",
+      "name": "Qwen Max 2024 04 28",
+      "display_name": "Qwen Max 2024 04 28",
+      "temperature": true,
+      "attachment": false,
+      "tool_call": true,
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "limit": {
+        "context": 8000,
+        "output": 2000
+      },
+      "reasoning": {
+        "supported": false
+      },
+      "type": "chat"
+    },
+    {
+      "id": "qwen-max-2024-04-03",
+      "name": "Qwen Max 2024 04 03",
+      "display_name": "Qwen Max 2024 04 03",
+      "temperature": true,
+      "attachment": false,
+      "tool_call": true,
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "limit": {
+        "context": 8000,
+        "output": 2000
+      },
+      "reasoning": {
+        "supported": false
+      },
+      "type": "chat"
+    },
+    {
+      "id": "qwen-max-2025-01-25",
+      "name": "Qwen Max 2025 01 25",
+      "display_name": "Qwen Max 2025 01 25",
+      "temperature": true,
+      "attachment": false,
+      "tool_call": true,
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "limit": {
+        "context": 131072,
+        "output": 8192
+      },
+      "reasoning": {
+        "supported": false
+      },
+      "search": {
+        "supported": true,
+        "default": false,
+        "forced_search": false,
+        "search_strategy": "turbo"
+      },
+      "type": "chat"
+    },
+    {
+      "id": "qwen3-max-2025-09-23",
+      "name": "Qwen3 Max 20250923",
+      "display_name": "Qwen3 Max 20250923",
+      "temperature": true,
+      "attachment": false,
+      "tool_call": true,
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "limit": {
+        "context": 262144,
+        "output": 65536
+      },
+      "reasoning": {
+        "supported": false
+      },
+      "search": {
+        "supported": true,
+        "default": false,
+        "forced_search": false,
+        "search_strategy": "turbo"
+      },
+      "type": "chat"
+    },
+    {
+      "id": "qwen3-max-preview",
+      "name": "Qwen3 Max Preview",
+      "display_name": "Qwen3 Max Preview",
+      "temperature": true,
+      "attachment": false,
+      "tool_call": true,
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "limit": {
+        "context": 262144,
+        "output": 65536
+      },
+      "reasoning": {
+        "supported": true
+      },
+      "search": {
+        "supported": true,
+        "default": false,
+        "forced_search": false,
+        "search_strategy": "turbo"
+      },
+      "extra_capabilities": {
+        "reasoning": {
+          "supported": true,
+          "interleaved": true,
+          "summaries": true,
+          "visibility": "summary",
+          "continuation": [
+            "thinking_blocks"
+          ]
+        }
+      },
+      "type": "chat"
+    },
+    {
+      "id": "qwen3-235b-a22b-thinking-2507",
+      "name": "Qwen3 235B A22B Thinking 2507",
+      "display_name": "Qwen3 235B A22B Thinking 2507",
+      "temperature": true,
+      "attachment": false,
+      "tool_call": false,
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "limit": {
+        "context": 131072,
+        "output": 32768
+      },
+      "reasoning": {
+        "supported": true,
+        "default": true,
+        "budget": {
+          "min": 0,
+          "max": 81920,
+          "default": 81920
+        }
+      },
+      "extra_capabilities": {
+        "reasoning": {
+          "supported": true,
+          "interleaved": true,
+          "summaries": true,
+          "visibility": "summary",
+          "continuation": [
+            "thinking_blocks"
+          ]
+        }
+      },
+      "type": "chat"
+    },
+    {
+      "id": "qwen3-235b-a22b-instruct-2507",
+      "name": "Qwen3 235B A22B Instruct 2507",
+      "display_name": "Qwen3 235B A22B Instruct 2507",
+      "temperature": true,
+      "attachment": false,
+      "tool_call": true,
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "limit": {
+        "context": 131072,
+        "output": 32768
+      },
+      "reasoning": {
+        "supported": false
+      },
+      "type": "chat"
+    },
+    {
+      "id": "qwen3-30b-a3b-instruct-2507",
+      "name": "Qwen3 30B A3B Instruct 2507",
+      "display_name": "Qwen3 30B A3B Instruct 2507",
+      "temperature": true,
+      "attachment": false,
+      "tool_call": true,
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "limit": {
+        "context": 131072,
+        "output": 32768
+      },
+      "reasoning": {
+        "supported": false
+      },
+      "type": "chat"
+    },
+    {
+      "id": "qwen3-30b-a3b-thinking-2507",
+      "name": "Qwen3 30B A3B Thinking 2507",
+      "display_name": "Qwen3 30B A3B Thinking 2507",
+      "temperature": true,
+      "attachment": false,
+      "tool_call": false,
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "limit": {
+        "context": 131072,
+        "output": 32768
+      },
+      "reasoning": {
+        "supported": true,
+        "default": true,
+        "budget": {
+          "min": 0,
+          "max": 81920,
+          "default": 81920
+        }
+      },
+      "extra_capabilities": {
+        "reasoning": {
+          "supported": true,
+          "interleaved": true,
+          "summaries": true,
+          "visibility": "summary",
+          "continuation": [
+            "thinking_blocks"
+          ]
+        }
+      },
+      "type": "chat"
+    },
+    {
+      "id": "qwen3-30b-a3b",
+      "name": "Qwen3 30B A3B",
+      "display_name": "Qwen3 30B A3B",
+      "temperature": true,
+      "attachment": false,
+      "tool_call": true,
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "limit": {
+        "context": 131072,
+        "output": 32768
+      },
+      "reasoning": {
+        "supported": true,
+        "default": false,
+        "budget": {
+          "min": 0,
+          "max": 81920,
+          "default": 81920
+        }
+      },
+      "extra_capabilities": {
+        "reasoning": {
+          "supported": true,
+          "interleaved": true,
+          "summaries": true,
+          "visibility": "summary",
+          "continuation": [
+            "thinking_blocks"
+          ]
+        }
+      },
+      "type": "chat"
+    },
+    {
+      "id": "qwen3-4b",
+      "name": "Qwen3 4B",
+      "display_name": "Qwen3 4B",
+      "temperature": true,
+      "attachment": false,
+      "tool_call": true,
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "limit": {
+        "context": 131072,
+        "output": 8192
+      },
+      "reasoning": {
+        "supported": true,
+        "default": true,
+        "budget": {
+          "min": 0,
+          "max": 38912,
+          "default": 38912
+        }
+      },
+      "extra_capabilities": {
+        "reasoning": {
+          "supported": true,
+          "interleaved": true,
+          "summaries": true,
+          "visibility": "summary",
+          "continuation": [
+            "thinking_blocks"
+          ]
+        }
+      },
+      "type": "chat"
+    },
+    {
+      "id": "qwen3-1.7b",
+      "name": "Qwen3 1.7B",
+      "display_name": "Qwen3 1.7B",
+      "temperature": true,
+      "attachment": false,
+      "tool_call": true,
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "limit": {
+        "context": 32768,
+        "output": 8192
+      },
+      "reasoning": {
+        "supported": true,
+        "default": true,
+        "budget": {
+          "min": 0,
+          "max": 30720,
+          "default": 30720
+        }
+      },
+      "extra_capabilities": {
+        "reasoning": {
+          "supported": true,
+          "interleaved": true,
+          "summaries": true,
+          "visibility": "summary",
+          "continuation": [
+            "thinking_blocks"
+          ]
+        }
+      },
+      "type": "chat"
+    },
+    {
+      "id": "qwen3-0.6b",
+      "name": "Qwen3 0.6B",
+      "display_name": "Qwen3 0.6B",
+      "temperature": true,
+      "attachment": false,
+      "tool_call": true,
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "limit": {
+        "context": 32768,
+        "output": 8192
+      },
+      "reasoning": {
+        "supported": true,
+        "default": true,
+        "budget": {
+          "min": 0,
+          "max": 30720,
+          "default": 30720
+        }
+      },
+      "extra_capabilities": {
+        "reasoning": {
+          "supported": true,
+          "interleaved": true,
+          "summaries": true,
+          "visibility": "summary",
+          "continuation": [
+            "thinking_blocks"
+          ]
+        }
+      },
+      "type": "chat"
+    },
+    {
+      "id": "qwen3-vl-plus-2025-09-23",
+      "name": "Qwen3 VL Plus 2025 09 23",
+      "display_name": "Qwen3 VL Plus 2025 09 23",
+      "temperature": true,
+      "attachment": false,
+      "tool_call": false,
+      "modalities": {
+        "input": [
+          "text",
+          "image"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "limit": {
+        "context": 262144,
+        "output": 32768
+      },
+      "reasoning": {
+        "supported": true,
+        "default": false,
+        "budget": {
+          "min": 0,
+          "max": 81920,
+          "default": 81920
+        }
+      },
+      "extra_capabilities": {
+        "reasoning": {
+          "supported": true,
+          "interleaved": true,
+          "summaries": true,
+          "visibility": "summary",
+          "continuation": [
+            "thinking_blocks"
+          ]
+        }
+      },
+      "type": "chat"
+    },
+    {
+      "id": "qwq-plus-latest",
+      "name": "QwQ Plus Latest",
+      "display_name": "QwQ Plus Latest",
+      "temperature": true,
+      "attachment": false,
+      "tool_call": false,
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "limit": {
+        "context": 131072,
+        "output": 8192
+      },
+      "reasoning": {
+        "supported": true,
+        "default": true,
+        "budget": {
+          "min": 0,
+          "max": 32768,
+          "default": 32768
+        }
+      },
+      "search": {
+        "supported": false
+      },
+      "extra_capabilities": {
+        "reasoning": {
+          "supported": true,
+          "interleaved": true,
+          "summaries": true,
+          "visibility": "summary",
+          "continuation": [
+            "thinking_blocks"
+          ]
+        }
+      },
+      "type": "chat"
+    },
+    {
+      "id": "qwen3-rerank",
+      "name": "qwen3-rerank",
+      "display_name": "qwen3-rerank",
+      "type": "rerank",
+      "family": "qwen",
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "metadata": {
+        "endpoints": "rerank",
+        "source": "official-documentation",
+        "pricing_status": "unverified"
+      }
+    }
+  ]
+}

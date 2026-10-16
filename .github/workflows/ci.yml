@@ -1,0 +1,944 @@
+name: CI
+
+on:
+  # Deliberately unfiltered. A `branches:` filter here would mean a pull request
+  # targeting anything but main never starts this workflow at all, and a required
+  # check that never starts blocks such a pull request forever.
+  pull_request:
+  push:
+    branches:
+      - main
+  merge_group:
+
+# Read-only by default, matching container-images.yml. No job here needs more, and
+# untrusted pull request code runs go test, npm scripts and a production build.
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          # The version lives in one place. setup-go looks at the repository root by
+          # default, and this module is not there.
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+
+      - name: Check formatting
+        run: |
+          set -euo pipefail
+          unformatted="$(gofmt -l .)"
+          if [[ -n "$unformatted" ]]; then
+            echo "These files are not gofmt-formatted:" >&2
+            echo "$unformatted" >&2
+            echo "Run: gofmt -w $unformatted" >&2
+            exit 1
+          fi
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Lint
+        uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
+        with:
+          version: v2.12.2
+          working-directory: backend
+
+      - name: Test
+        # The server integration package can exceed Go's default 10-minute
+        # limit on hosted runners. Leave time within the job for final checks.
+        run: go test -timeout 15m ./...
+
+      - name: Migration manifest is current
+        run: |
+          set -euo pipefail
+          go run ./cmd/manifestgen
+          if ! git diff --exit-code --quiet -- internal/dbschema/migrations_manifest.json; then
+            echo "Embedded migration manifest is stale (see docs/database-evolution.md)." >&2
+            echo "Run: go run ./cmd/manifestgen" >&2
+            exit 1
+          fi
+
+  plugin-devkit:
+    name: Plugin DevKit
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: plugin-devkit
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: plugin-devkit/go.mod
+          cache-dependency-path: plugin-devkit/go.sum
+
+      - name: Check formatting
+        run: |
+          set -euo pipefail
+          unformatted="$(gofmt -l .)"
+          if [[ -n "$unformatted" ]]; then
+            echo "These files are not gofmt-formatted:" >&2
+            echo "$unformatted" >&2
+            echo "Run: gofmt -w $unformatted" >&2
+            exit 1
+          fi
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Lint
+        uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
+        with:
+          version: v2.12.2
+          working-directory: plugin-devkit
+
+      - name: Test
+        run: go test ./...
+
+  backend-postgres:
+    name: Backend PostgreSQL
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: tokenhub_e2e
+          POSTGRES_USER: tokenhub
+          POSTGRES_PASSWORD: tokenhub-e2e-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U tokenhub -d tokenhub_e2e"
+          --health-interval 2s
+          --health-timeout 2s
+          --health-retries 30
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+
+      - name: Test PostgreSQL migrations and multi-instance behavior
+        env:
+          TEST_POSTGRES_URL: postgresql://tokenhub:tokenhub-e2e-password@localhost:5432/tokenhub_e2e?sslmode=disable
+        run: |
+          go test -tags=integration ./internal/server -run '^(TestMultiInstancePostgresE2E|TestPostgresBaselineSQLIsCurrent|TestPostgresFreshStoreAdoptsFromBaselineSQL|TestPostgresMeteringSchemaVerification|TestPostgresStartupSchemaLockWaitHonorsContext|TestQuotaBucketMigrationPostgresAddsAttributionColumnBeforeBackfill|TestUserQuotaIsAtomicAcrossPostgresInstances|TestSemanticRoutingPostgresPolicy|TestSemanticRoutingPostgresConcurrentModelEdit|TestJevPostgresResponseBinding)$' -count=1 -v
+          go test -tags=integration ./internal/dbschema -run '^TestPostgres' -count=1 -v
+
+      - name: Test PostgreSQL reconciliation persistence contract
+        env:
+          TEST_POSTGRES_URL: postgresql://tokenhub:tokenhub-e2e-password@localhost:5432/tokenhub_e2e?sslmode=disable
+        run: go test -tags=integration ./internal/reconciliation/persistence -run '^TestPostgres' -count=1 -v
+
+      - name: Check out previous release tag
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: v0.4.0
+          path: n1
+          persist-credentials: false
+
+      - name: Build N-1 binaries
+        run: |
+          go build -o "$RUNNER_TEMP/current-tokenhub" ./cmd/tokenhub
+          go build -o "$RUNNER_TEMP/n1check" ./cmd/n1check
+          (cd ../n1/backend && go build -o "$RUNNER_TEMP/n1-tokenhub" ./cmd/tokenhub)
+
+      - name: Run the PostgreSQL N-1 contract
+        env:
+          TOKENHUB_ADMIN_TOKEN: n1-contract-token
+          N1_PG_URL: postgresql://tokenhub:tokenhub-e2e-password@localhost:5432/tokenhub_n1?sslmode=disable
+        run: |
+          set -euo pipefail
+          docker exec "${{ job.services.postgres.id }}" createdb -U tokenhub tokenhub_n1
+          boot_and_wait() {
+            bin="$1"; port="$2"; probe="$3"; log="$4"
+            TOKENHUB_HTTP_ADDR="127.0.0.1:${port}" TOKENHUB_DATABASE_URL="${N1_PG_URL}" "$bin" >"$log" 2>&1 &
+            pid=$!
+            for _ in $(seq 1 90); do
+              curl -fsS "http://127.0.0.1:${port}${probe}" >/dev/null 2>&1 && { kill "$pid"; wait "$pid" 2>/dev/null || true; return 0; }
+              kill -0 "$pid" 2>/dev/null || { echo "process died; log follows"; cat "$log"; return 1; }
+              sleep 1
+            done
+            echo "timeout waiting for port ${port}; log follows"; cat "$log"; kill "$pid" 2>/dev/null || true; return 1
+          }
+          boot_keep() {
+            bin="$1"; port="$2"; probe="$3"; log="$4"
+            TOKENHUB_HTTP_ADDR="127.0.0.1:${port}" TOKENHUB_DATABASE_URL="${N1_PG_URL}" "$bin" >"$log" 2>&1 &
+            pid=$!
+            for _ in $(seq 1 90); do
+              curl -fsS "http://127.0.0.1:${port}${probe}" >/dev/null 2>&1 && { echo "$pid"; return 0; }
+              kill -0 "$pid" 2>/dev/null || { echo "process died; log follows"; cat "$log"; return 1; }
+              sleep 1
+            done
+            echo "timeout waiting for port ${port}; log follows"; cat "$log"; kill "$pid" 2>/dev/null || true; return 1
+          }
+          run_crud_contract() {
+            base="$1"
+            auth="Authorization: Bearer ${TOKENHUB_ADMIN_TOKEN}"
+            ct="Content-Type: application/json"
+            curl -fsS -H "$auth" "${base}/api/admin/auth/me" >/dev/null
+            project="$(curl -fsS -X POST -H "$auth" -H "$ct" \
+              -d '{"name":"n1-contract-project","status":"active","team_id":"team_platform"}' \
+              "${base}/api/admin/projects")"
+            project_id="$(printf '%s' "$project" | jq -r '.id')"
+            [ -n "$project_id" ] && [ "$project_id" != "null" ]
+            keyresp="$(curl -fsS -X POST -H "$auth" -H "$ct" \
+              -d '{"name":"n1-contract-key"}' \
+              "${base}/api/admin/projects/${project_id}/keys")"
+            key="$(printf '%s' "$keyresp" | jq -r '.api_key')"
+            [ -n "$key" ] && [ "$key" != "null" ]
+            provider="$(curl -fsS -X POST -H "$auth" -H "$ct" \
+              -d '{"type":"mock","name":"n1-mock","status":"active","create_routes":false}' \
+              "${base}/api/admin/providers")"
+            provider_id="$(printf '%s' "$provider" | jq -r '.provider.id')"
+            [ -n "$provider_id" ] && [ "$provider_id" != "null" ]
+            imported="$(curl -fsS -X POST -H "$auth" -H "$ct" \
+              -d "{\"provider_id\":\"${provider_id}\",\"publish\":true,\"models\":[{\"id\":\"n1-upstream\",\"name\":\"n1-upstream\"}]}" \
+              "${base}/api/admin/provider-models/import")"
+            [ "$(printf '%s' "$imported" | jq -r '.created_routes')" = "1" ]
+            gateway="$(curl -fsS -X POST -H "Authorization: Bearer ${key}" -H "$ct" \
+              -d '{"model":"n1-upstream","messages":[{"role":"user","content":"hello from n1"}]}' \
+              "${base}/v1/chat/completions")"
+            printf '%s' "$gateway" | grep -q '"content":"Echo: hello from n1"'
+            curl -fsS -H "$auth" "${base}/api/admin/audit/events" | jq -e '.data | length >= 1' >/dev/null
+            echo "PostgreSQL N-1 CRUD contract passed"
+          }
+          verify_current_reads() {
+            base="$1"
+            auth="Authorization: Bearer ${TOKENHUB_ADMIN_TOKEN}"
+            curl -fsS -H "$auth" "${base}/api/admin/projects" | jq -e '.data[] | select(.name == "n1-contract-project")' >/dev/null
+            curl -fsS -H "$auth" "${base}/api/admin/models" | jq -e '.data[] | select(.name == "n1-upstream")' >/dev/null
+            echo "current release reads v0.4.0 PostgreSQL writes"
+          }
+          # The previous release creates the legacy PostgreSQL database, and
+          # the immutable N-1 schema fixture pins its shape as required by
+          # docs/database-evolution.md.
+          boot_and_wait "$RUNNER_TEMP/n1-tokenhub" 18581 /healthz "$RUNNER_TEMP/pg-n1-a.log"
+          "$RUNNER_TEMP/n1check" "${N1_PG_URL}"
+          # The current release adopts it and reports full readiness.
+          boot_and_wait "$RUNNER_TEMP/current-tokenhub" 18582 /readyz "$RUNNER_TEMP/pg-cur-b.log"
+          TOKENHUB_DATABASE_URL="${N1_PG_URL}" "$RUNNER_TEMP/current-tokenhub" db verify
+          # The previous release boots again on the adopted database and runs
+          # the CRUD contract through its own API.
+          crud_pid="$(boot_keep "$RUNNER_TEMP/n1-tokenhub" 18583 /healthz "$RUNNER_TEMP/pg-n1-c.log")"
+          run_crud_contract "http://127.0.0.1:18583"
+          kill "$crud_pid"; wait "$crud_pid" 2>/dev/null || true
+          # The current release returns and reads every write the old release
+          # made on the adopted PostgreSQL database.
+          cur_pid="$(boot_keep "$RUNNER_TEMP/current-tokenhub" 18584 /readyz "$RUNNER_TEMP/pg-cur-e.log")"
+          verify_current_reads "http://127.0.0.1:18584"
+          kill "$cur_pid"; wait "$cur_pid" 2>/dev/null || true
+
+  backend-db-n1:
+    name: Backend database N-1 contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Check out previous release tag
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: v0.4.0
+          path: n1
+          persist-credentials: false
+
+      - name: Check out v0.5.0 release tag
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: v0.5.0
+          path: n15
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+
+      - name: Build release binaries
+        run: |
+          (cd backend && go build -o "$RUNNER_TEMP/current-tokenhub" ./cmd/tokenhub)
+          (cd backend && go build -o "$RUNNER_TEMP/n1check" ./cmd/n1check)
+          (cd n1/backend && go build -o "$RUNNER_TEMP/n1-tokenhub" ./cmd/tokenhub)
+          (cd n15/backend && go build -o "$RUNNER_TEMP/n15-tokenhub" ./cmd/tokenhub)
+
+      - name: Run the N-1 two-way compatibility contract
+        env:
+          TOKENHUB_ADMIN_TOKEN: n1-contract-token
+          N1_DATABASE: ${{ runner.temp }}/n1-contract.db
+        run: |
+          set -euo pipefail
+          # Boot a binary against a database and wait for a probe; kills the
+          # process once the probe succeeds.
+          boot_and_wait() {
+            bin="$1"; port="$2"; probe="$3"; log="$4"; dburl="$5"
+            TOKENHUB_HTTP_ADDR="127.0.0.1:${port}" TOKENHUB_DATABASE_URL="${dburl}" "$bin" >"$log" 2>&1 &
+            pid=$!
+            for _ in $(seq 1 60); do
+              curl -fsS "http://127.0.0.1:${port}${probe}" >/dev/null 2>&1 && { kill "$pid"; wait "$pid" 2>/dev/null || true; return 0; }
+              kill -0 "$pid" 2>/dev/null || { echo "process died; log follows"; cat "$log"; return 1; }
+              sleep 1
+            done
+            echo "timeout waiting for port ${port}; log follows"; cat "$log"; kill "$pid" 2>/dev/null || true; return 1
+          }
+          # Boot a binary and leave it running; prints the pid.
+          boot_keep() {
+            bin="$1"; port="$2"; probe="$3"; log="$4"; dburl="$5"
+            TOKENHUB_HTTP_ADDR="127.0.0.1:${port}" TOKENHUB_DATABASE_URL="${dburl}" "$bin" >"$log" 2>&1 &
+            pid=$!
+            for _ in $(seq 1 60); do
+              curl -fsS "http://127.0.0.1:${port}${probe}" >/dev/null 2>&1 && { echo "$pid"; return 0; }
+              kill -0 "$pid" 2>/dev/null || { echo "process died; log follows"; cat "$log"; return 1; }
+              sleep 1
+            done
+            echo "timeout waiting for port ${port}; log follows"; cat "$log"; kill "$pid" 2>/dev/null || true; return 1
+          }
+          # The N-1 CRUD contract in docs/database-evolution.md: the old binary must complete
+          # auth, project & team, API key, provider, model & route, one gateway
+          # request, and audit writes against the adopted database.
+          run_crud_contract() {
+            base="$1"
+            auth="Authorization: Bearer ${TOKENHUB_ADMIN_TOKEN}"
+            ct="Content-Type: application/json"
+            curl -fsS -H "$auth" "${base}/api/admin/auth/me" >/dev/null
+            project="$(curl -fsS -X POST -H "$auth" -H "$ct" \
+              -d '{"name":"n1-contract-project","status":"active","team_id":"team_platform"}' \
+              "${base}/api/admin/projects")"
+            project_id="$(printf '%s' "$project" | jq -r '.id')"
+            [ -n "$project_id" ] && [ "$project_id" != "null" ]
+            keyresp="$(curl -fsS -X POST -H "$auth" -H "$ct" \
+              -d '{"name":"n1-contract-key"}' \
+              "${base}/api/admin/projects/${project_id}/keys")"
+            key="$(printf '%s' "$keyresp" | jq -r '.api_key')"
+            [ -n "$key" ] && [ "$key" != "null" ]
+            provider="$(curl -fsS -X POST -H "$auth" -H "$ct" \
+              -d '{"type":"mock","name":"n1-mock","status":"active","create_routes":false}' \
+              "${base}/api/admin/providers")"
+            provider_id="$(printf '%s' "$provider" | jq -r '.provider.id')"
+            [ -n "$provider_id" ] && [ "$provider_id" != "null" ]
+            imported="$(curl -fsS -X POST -H "$auth" -H "$ct" \
+              -d "{\"provider_id\":\"${provider_id}\",\"publish\":true,\"models\":[{\"id\":\"n1-upstream\",\"name\":\"n1-upstream\"}]}" \
+              "${base}/api/admin/provider-models/import")"
+            [ "$(printf '%s' "$imported" | jq -r '.created_routes')" = "1" ]
+            gateway="$(curl -fsS -X POST -H "Authorization: Bearer ${key}" -H "$ct" \
+              -d '{"model":"n1-upstream","messages":[{"role":"user","content":"hello from n1"}]}' \
+              "${base}/v1/chat/completions")"
+            printf '%s' "$gateway" | grep -q '"content":"Echo: hello from n1"'
+            audits="$(curl -fsS -H "$auth" "${base}/api/admin/audit/events")"
+            [ "$(printf '%s' "$audits" | jq '.data | length')" -ge 1 ]
+            echo "N-1 CRUD contract passed"
+          }
+          # The current release must read every write the old release made.
+          verify_current_reads() {
+            base="$1"
+            auth="Authorization: Bearer ${TOKENHUB_ADMIN_TOKEN}"
+            curl -fsS -H "$auth" "${base}/api/admin/projects" | jq -e '.data[] | select(.name == "n1-contract-project")' >/dev/null
+            curl -fsS -H "$auth" "${base}/api/admin/providers" | jq -e '.data[] | select(.name == "n1-mock")' >/dev/null
+            curl -fsS -H "$auth" "${base}/api/admin/models" | jq -e '.data[] | select(.name == "n1-upstream")' >/dev/null
+            echo "current release reads v0.4.0 writes"
+          }
+
+          # Leg 1: v0.4.0 (previous stable) creates the legacy database; its
+          # health endpoint is a plain connectivity probe.
+          boot_and_wait "$RUNNER_TEMP/n1-tokenhub" 18081 /healthz "$RUNNER_TEMP/n1-a.log" "sqlite://${N1_DATABASE}"
+          # The immutable N-1 schema fixture pins the legacy shape before the
+          # current release adopts it, as specified in docs/database-evolution.md.
+          "$RUNNER_TEMP/n1check" "sqlite://${N1_DATABASE}"
+          # The current release adopts it and must report full readiness, not
+          # just liveness: /readyz fails on dirty or unverifiable state.
+          boot_and_wait "$RUNNER_TEMP/current-tokenhub" 18082 /readyz "$RUNNER_TEMP/cur-b.log" "sqlite://${N1_DATABASE}"
+          TOKENHUB_DATABASE_URL="sqlite://${N1_DATABASE}" "$RUNNER_TEMP/current-tokenhub" db verify
+          # The previous release boots again on the adopted database (rollback
+          # window) and runs the CRUD contract through its own API.
+          crud_pid="$(boot_keep "$RUNNER_TEMP/n1-tokenhub" 18083 /healthz "$RUNNER_TEMP/n1-c.log" "sqlite://${N1_DATABASE}")"
+          run_crud_contract "http://127.0.0.1:18083"
+          kill "$crud_pid"; wait "$crud_pid" 2>/dev/null || true
+          # The current release returns to the same database and must read
+          # every write the old release made.
+          cur_pid="$(boot_keep "$RUNNER_TEMP/current-tokenhub" 18084 /readyz "$RUNNER_TEMP/cur-e.log" "sqlite://${N1_DATABASE}")"
+          verify_current_reads "http://127.0.0.1:18084"
+          kill "$cur_pid"; wait "$cur_pid" 2>/dev/null || true
+          TOKENHUB_DATABASE_URL="sqlite://${N1_DATABASE}" "$RUNNER_TEMP/current-tokenhub" db status
+
+          # Leg 2: v0.5.0 is the other pre-ledger stable release; legacy
+          # adoption must be validated with its real fixture too, as specified
+          # in docs/database-evolution.md.
+          N15_DATABASE="${{ runner.temp }}/n15-contract.db"
+          boot_and_wait "$RUNNER_TEMP/n15-tokenhub" 18091 /healthz "$RUNNER_TEMP/n15-a.log" "sqlite://${N15_DATABASE}"
+          # Pin the v0.5.0 legacy shape before the current release adopts it;
+          # the v0.4.0 fixture alone is too loose for this leg because v0.5.0
+          # added tables and columns it would not notice.
+          "$RUNNER_TEMP/n1check" -fixture v050 "sqlite://${N15_DATABASE}"
+          # Exercise the managed-upgrade preflight path directly: the target
+          # binary must adopt the real pre-ledger v0.5.0 shape before it is
+          # activated, without requiring a target server start first.
+          TOKENHUB_DATABASE_URL="sqlite://${N15_DATABASE}" "$RUNNER_TEMP/current-tokenhub" db prepare
+          TOKENHUB_DATABASE_URL="sqlite://${N15_DATABASE}" "$RUNNER_TEMP/current-tokenhub" db verify
+          boot_and_wait "$RUNNER_TEMP/current-tokenhub" 18092 /readyz "$RUNNER_TEMP/cur-f.log" "sqlite://${N15_DATABASE}"
+          TOKENHUB_DATABASE_URL="sqlite://${N15_DATABASE}" "$RUNNER_TEMP/current-tokenhub" db verify
+          boot_and_wait "$RUNNER_TEMP/n15-tokenhub" 18093 /healthz "$RUNNER_TEMP/n15-d.log" "sqlite://${N15_DATABASE}"
+          boot_and_wait "$RUNNER_TEMP/current-tokenhub" 18094 /readyz "$RUNNER_TEMP/cur-g.log" "sqlite://${N15_DATABASE}"
+          echo "v0.5.0 adoption contract passed"
+
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      # There is deliberately no post-build check on next-env.d.ts. Next.js rewrites
+      # its routes import to match the build mode — the committed file references
+      # .next/dev/types, and every production build flips it to .next/types — so such
+      # a check would fail on every run, including on a clean main. AGENTS.md's rule
+      # against committing that flip stays a review-time concern; it cannot be
+      # distinguished from CI simply having built in production mode.
+
+  frontend-browser-smoke:
+    name: Frontend browser smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check Chrome
+        run: google-chrome --version
+
+      - name: Run browser smoke tests
+        env:
+          TOKENHUB_E2E_BROWSER_CHANNEL: chrome
+        run: npm run test:e2e
+
+      - name: Upload browser failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: frontend-browser-smoke
+          path: |
+            frontend/playwright-report
+            frontend/test-results
+          if-no-files-found: ignore
+          retention-days: 7
+
+  deployment:
+    name: Deployment
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      TOKENHUB_ADMIN_TOKEN: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+      TOKENHUB_BOOTSTRAP_ADMIN_PASSWORD: strong-admin-password
+      TOKENHUB_DATABASE_URL: postgresql://tokenhub:test@db.example:5432/tokenhub?sslmode=require
+      TOKENHUB_PUBLIC_BASE_URL: https://tokenhub.example.com
+      TOKENHUB_SECRET_KEY: ssssssssssssssssssssssssssssssss
+      TOKENHUB_TRUSTED_PROXY_CIDRS: 127.0.0.1/32
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Check shell syntax
+        run: |
+          bash -n \
+            .github/release/normalize-release-tag.sh \
+            .github/release/normalize-release-tag_test.sh \
+            deploy/install.sh \
+            deploy/install_test.sh \
+            deploy/native/install.sh \
+            deploy/native/install_test.sh \
+            deploy/native/tokenhub-run
+          sh -n \
+            deploy/container/tokenhub-build-id \
+            deploy/container/tokenhub-entrypoint
+
+      - name: Test deployment scripts
+        run: |
+          .github/release/normalize-release-tag_test.sh
+          deploy/install_test.sh
+          TOKENHUB_NATIVE_INTEGRATION=1 deploy/native/install_test.sh
+          deploy/container/tokenhub-entrypoint_test.sh
+
+      - name: Render Compose configurations
+        env:
+          TOKENHUB_MAX_JSON_REQUEST_BYTES: "1234567"
+          TOKENHUB_MAX_MULTIMODAL_REQUEST_BYTES: "4567890"
+        run: |
+          set -euo pipefail
+
+          render_and_assert_limits() {
+            local compose_file="$1"
+            local rendered
+            rendered="$(docker compose --env-file deploy/.env.example -f "$compose_file" config)"
+            grep -Fq 'TOKENHUB_MAX_JSON_REQUEST_BYTES: "1234567"' <<<"$rendered"
+            grep -Fq 'TOKENHUB_MAX_MULTIMODAL_REQUEST_BYTES: "4567890"' <<<"$rendered"
+          }
+
+          render_and_assert_limits deploy/docker-compose.yml
+          render_and_assert_limits deploy/docker-compose.postgres.yml
+          render_and_assert_limits deploy/docker-compose.remote-postgres.yml
+
+          remote_rendered="$(docker compose --env-file deploy/.env.example -f deploy/docker-compose.remote-postgres.yml config)"
+          grep -Fq 'target: /etc/nginx/templates/default.conf.template' <<<"$remote_rendered"
+          # The load balancer's client_max_body_size uses an nginx-format variable
+          # (default 32m), kept separate from the backend's byte-format limits so a
+          # value like 32mb never renders as invalid nginx syntax.
+          grep -Fq 'TOKENHUB_NGINX_CLIENT_MAX_BODY_SIZE: 32m' <<<"$remote_rendered"
+
+          docker compose --env-file deploy/.env.example \
+            -f deploy/docker-compose.yml \
+            -f deploy/docker-compose.model-catalog.yml \
+            config >/dev/null
+
+      - name: Render Helm chart
+        run: |
+          set -euo pipefail
+
+          # Negated assertions cannot fail a `set -e` step on their own (the
+          # inverted status skips errexit), so absence checks go through this
+          # helper, which exits explicitly.
+          assert_absent() {
+            if grep -q "$1" <<<"$2"; then
+              echo "rendered output unexpectedly contains: $1" >&2
+              exit 1
+            fi
+          }
+
+          # Chart.lock pins the dependency but does not register its
+          # repository, so a clean runner must add it before building.
+          helm repo add bitnami https://charts.bitnami.com/bitnami
+          helm repo update
+          helm dependency build deploy/helm/tokenhub
+
+          helm lint deploy/helm/tokenhub \
+            --set secretEnv.TOKENHUB_SECRET_KEY=ssssssssssssssssssssssssssssssss \
+            --set secretEnv.TOKENHUB_BOOTSTRAP_ADMIN_PASSWORD=bootstrap-password \
+            --set database.existingSecret=tokenhub-database
+
+          helm template tokenhub deploy/helm/tokenhub \
+            --set ingress.enabled=true \
+            --set ingress.host=tokenhub.example.com \
+            --set ingress.tls.enabled=true \
+            --set secretEnv.TOKENHUB_SECRET_KEY=ssssssssssssssssssssssssssssssss \
+            --set secretEnv.TOKENHUB_BOOTSTRAP_ADMIN_PASSWORD=bootstrap-password \
+            --set database.url='postgresql://tokenhub:test@db.example:5432/tokenhub?sslmode=require' \
+            --set 'extraEnv[0].name=TOKENHUB_TRUSTED_PROXY_CIDRS' \
+            --set 'extraEnv[0].value=10.0.0.0/8' \
+            > /tmp/tokenhub-chart.yaml
+          rendered="$(cat /tmp/tokenhub-chart.yaml)"
+
+          # Single all-in-one deployment: both processes in one pod,
+          # extraEnv passes through verbatim, plugins stateless.
+          grep -Fq 'image: "ghcr.io/astaxie/tokenhub-backend:' <<<"$rendered"
+          grep -Fq 'name: TOKENHUB_TRUSTED_PROXY_CIDRS' <<<"$rendered"
+          grep -Fq 'value: 10.0.0.0/8' <<<"$rendered"
+          grep -Fq 'name: TOKENHUB_BOOTSTRAP_ADMIN_PASSWORD' <<<"$rendered"
+          grep -Fq 'emptyDir: {}' <<<"$rendered"
+          grep -Fq 'name: api' <<<"$rendered"
+          grep -Fq 'name: console' <<<"$rendered"
+          assert_absent 'kind: PodMonitor' "$rendered"
+          assert_absent 'kind: ExternalSecret' "$rendered"
+
+          # Non-overlapping defaults: one replica with the Recreate strategy,
+          # so even the 0.8.0 image's global image-job recovery only ever
+          # touches its own jobs.
+          grep -Fq 'replicas: 1' <<<"$rendered"
+          grep -Fq 'type: Recreate' <<<"$rendered"
+          assert_absent 'rollingUpdate:' "$rendered"
+
+          # Production hardening: the pod runs in the prod environment (the
+          # built-in development admin token is rejected there) and the console
+          # derives its browser-facing API URL from the ingress host.
+          grep -Fq 'name: TOKENHUB_ENV' <<<"$rendered"
+          grep -Fq 'value: "prod"' <<<"$rendered"
+          grep -Fq 'name: TOKENHUB_API_BASE_URL' <<<"$rendered"
+          grep -Fq 'value: "https://tokenhub.example.com"' <<<"$rendered"
+
+          # Chart-managed secrets: credentials and the database URL render
+          # separately, and the pod template carries a checksum so credential
+          # changes roll the pods.
+          grep -Fq 'name: tokenhub-tokenhub-credentials' <<<"$rendered"
+          grep -Fq 'name: tokenhub-tokenhub-database' <<<"$rendered"
+          grep -Fq 'checksum/secrets:' <<<"$rendered"
+
+          # A comma-separated CIDR list must escape the commas for Helm's
+          # --set parser, matching the documented production command.
+          helm template tokenhub deploy/helm/tokenhub \
+            --set ingress.enabled=true \
+            --set ingress.host=tokenhub.example.com \
+            --set secretEnv.TOKENHUB_SECRET_KEY=ssssssssssssssssssssssssssssssss \
+            --set secretEnv.TOKENHUB_BOOTSTRAP_ADMIN_PASSWORD=bootstrap-password \
+            --set database.url='postgresql://tokenhub:test@db.example:5432/tokenhub?sslmode=require' \
+            --set 'extraEnv[0].name=TOKENHUB_TRUSTED_PROXY_CIDRS' \
+            --set 'extraEnv[0].value=10.0.0.0/8\,172.16.0.0/12\,192.168.0.0/16' \
+            | grep -Fq 'value: 10.0.0.0/8,172.16.0.0/12,192.168.0.0/16'
+
+          # Operator sizing must reach the container spec.
+          helm template tokenhub deploy/helm/tokenhub \
+            --set ingress.enabled=false \
+            --set secretEnv.TOKENHUB_SECRET_KEY=ssssssssssssssssssssssssssssssss \
+            --set secretEnv.TOKENHUB_BOOTSTRAP_ADMIN_PASSWORD=bootstrap-password \
+            --set database.existingSecret=tokenhub-database \
+            --set resources.requests.memory=512Mi \
+            --set resources.limits.memory=1Gi \
+            > /tmp/tokenhub-resources.yaml
+          resources_rendered="$(cat /tmp/tokenhub-resources.yaml)"
+          grep -Fq 'requests:' <<<"$resources_rendered"
+          grep -Fq 'memory: 512Mi' <<<"$resources_rendered"
+          grep -Fq 'limits:' <<<"$resources_rendered"
+          grep -Fq 'memory: 1Gi' <<<"$resources_rendered"
+
+          # Shared image storage: the chart renders a ReadWriteMany claim and
+          # points TOKENHUB_IMAGE_STORAGE_DIR at the mounted path.
+          helm template tokenhub deploy/helm/tokenhub \
+            --set ingress.enabled=false \
+            --set secretEnv.TOKENHUB_SECRET_KEY=ssssssssssssssssssssssssssssssss \
+            --set secretEnv.TOKENHUB_BOOTSTRAP_ADMIN_PASSWORD=bootstrap-password \
+            --set database.existingSecret=tokenhub-database \
+            --set imageStorage.type=pvc \
+            --set imageStorage.storageClass=nfs \
+            > /tmp/tokenhub-images.yaml
+          images_rendered="$(cat /tmp/tokenhub-images.yaml)"
+          grep -Fq 'kind: PersistentVolumeClaim' <<<"$images_rendered"
+          grep -Fq 'ReadWriteMany' <<<"$images_rendered"
+          grep -Fq 'name: TOKENHUB_IMAGE_STORAGE_DIR' <<<"$images_rendered"
+          grep -Fq 'mountPath: /app/data/images' <<<"$images_rendered"
+
+          # PodMonitor scrapes /metrics; the metrics endpoint must be enabled
+          # through extraEnv with a string value (--set would render a YAML
+          # boolean that Kubernetes rejects).
+          helm template tokenhub deploy/helm/tokenhub \
+            --set ingress.enabled=false \
+            --set secretEnv.TOKENHUB_SECRET_KEY=ssssssssssssssssssssssssssssssss \
+            --set secretEnv.TOKENHUB_BOOTSTRAP_ADMIN_PASSWORD=bootstrap-password \
+            --set database.existingSecret=tokenhub-database \
+            --set 'extraEnv[0].name=TOKENHUB_METRICS_ENABLED' \
+            --set-string 'extraEnv[0].value=true' \
+            --set podMonitor.enabled=true \
+            > /tmp/tokenhub-podmonitor.yaml
+          grep -Fq 'kind: PodMonitor' /tmp/tokenhub-podmonitor.yaml
+          grep -Fq 'value: "true"' /tmp/tokenhub-podmonitor.yaml
+
+          # ExternalSecret mode replaces the chart-managed credentials secret.
+          helm template tokenhub deploy/helm/tokenhub \
+            --set ingress.enabled=false \
+            --set externalSecret.enabled=true \
+            --set externalSecret.secretStore=tokenhub-vault \
+            --set externalSecret.sourceSecretId=tokenhub/prod \
+            > /tmp/tokenhub-externalsecret.yaml
+          externalsecret_rendered="$(cat /tmp/tokenhub-externalsecret.yaml)"
+          grep -Fq 'apiVersion: external-secrets.io/v1beta1' <<<"$externalsecret_rendered"
+          grep -Fq 'kind: ClusterSecretStore' <<<"$externalsecret_rendered"
+          grep -Fq 'key: tokenhub/prod' <<<"$externalsecret_rendered"
+          grep -Fq 'creationPolicy: Owner' <<<"$externalsecret_rendered"
+          assert_absent '^kind: Secret$' "$externalsecret_rendered"
+
+          # An existing credentials secret combines with any database source:
+          # only the chart-managed database secret renders, and the pod reads
+          # the auth keys from the referenced secret.
+          helm template tokenhub deploy/helm/tokenhub \
+            --set ingress.enabled=false \
+            --set credentialsSecret=tokenhub-auth \
+            --set database.url='postgresql://tokenhub:test@db.example:5432/tokenhub?sslmode=require' \
+            > /tmp/tokenhub-combo.yaml
+          combo_rendered="$(cat /tmp/tokenhub-combo.yaml)"
+          [ "$(grep -c 'kind: Secret' <<<"$combo_rendered")" -eq 1 ]
+          grep -Fq 'name: tokenhub-tokenhub-database' <<<"$combo_rendered"
+          grep -A3 'name: TOKENHUB_SECRET_KEY' <<<"$combo_rendered" | grep -Fq 'name: tokenhub-auth'
+          grep -A3 'name: TOKENHUB_DATABASE_URL' <<<"$combo_rendered" | grep -Fq 'name: tokenhub-tokenhub-database'
+
+          # The built-in PostgreSQL subchart composes the database URL for
+          # quick-testing installs.
+          helm template tokenhub deploy/helm/tokenhub \
+            --set ingress.enabled=false \
+            --set postgresql.enabled=true \
+            --set postgresql.auth.password=quick-test-password \
+            --set secretEnv.TOKENHUB_SECRET_KEY=ssssssssssssssssssssssssssssssss \
+            --set secretEnv.TOKENHUB_BOOTSTRAP_ADMIN_PASSWORD=bootstrap-password \
+            | grep -Fq 'postgresql://tokenhub:quick-test-password@tokenhub-postgresql:5432/tokenhub?sslmode=disable'
+
+          # Migrating a saved production release to ExternalSecret mode must
+          # keep every secretKeyRef: empty strings preserve the typed
+          # secretEnv keys (null would delete them), and postgresql.enabled
+          # moves to false instead of null so the subchart stays excluded.
+          # The heredoc body and its VALUES terminator share the step's
+          # indentation: YAML strips that common indent, so Bash receives
+          # them at column zero.
+          cat > /tmp/tokenhub-prod-values.yaml <<'VALUES'
+          ingress:
+            enabled: true
+            host: tokenhub.example.com
+          secretEnv:
+            TOKENHUB_SECRET_KEY: ssssssssssssssssssssssssssssssss
+            TOKENHUB_BOOTSTRAP_ADMIN_PASSWORD: bootstrap-password
+          postgresql:
+            enabled: true
+            auth:
+              password: quick-test-password
+          extraEnv:
+            - name: TOKENHUB_TRUSTED_PROXY_CIDRS
+              value: 10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
+          VALUES
+          helm template tokenhub deploy/helm/tokenhub \
+            -f /tmp/tokenhub-prod-values.yaml \
+            --set externalSecret.enabled=true \
+            --set externalSecret.secretStore=aws-secrets-manager \
+            --set externalSecret.sourceSecretId=tokenhub/prod \
+            --set database.url=null \
+            --set postgresql.enabled=false \
+            --set-string 'secretEnv.TOKENHUB_SECRET_KEY=' \
+            --set-string 'secretEnv.TOKENHUB_BOOTSTRAP_ADMIN_PASSWORD=' \
+            > /tmp/tokenhub-migration.yaml
+          migration_rendered="$(cat /tmp/tokenhub-migration.yaml)"
+          grep -Fq 'kind: ExternalSecret' <<<"$migration_rendered"
+          assert_absent 'kind: StatefulSet' "$migration_rendered"
+          grep -A3 'name: TOKENHUB_SECRET_KEY' <<<"$migration_rendered" | grep -Fq 'name: tokenhub-tokenhub-credentials'
+          grep -A3 'name: TOKENHUB_BOOTSTRAP_ADMIN_PASSWORD' <<<"$migration_rendered" | grep -Fq 'name: tokenhub-tokenhub-credentials'
+          grep -A3 'name: TOKENHUB_DATABASE_URL' <<<"$migration_rendered" | grep -Fq 'name: tokenhub-tokenhub-credentials'
+          grep -Fq 'name: TOKENHUB_TRUSTED_PROXY_CIDRS' <<<"$migration_rendered"
+
+          # Enabling PodMonitor on an existing install must restate the
+          # production extraEnv entries: the list is replaced, not merged.
+          helm template tokenhub deploy/helm/tokenhub \
+            -f /tmp/tokenhub-prod-values.yaml \
+            --set postgresql.enabled=false \
+            --set secretEnv.TOKENHUB_SECRET_KEY=ssssssssssssssssssssssssssssssss \
+            --set secretEnv.TOKENHUB_BOOTSTRAP_ADMIN_PASSWORD=bootstrap-password \
+            --set database.url='postgresql://tokenhub:test@db.example:5432/tokenhub?sslmode=require' \
+            --set 'extraEnv[0].name=TOKENHUB_TRUSTED_PROXY_CIDRS' \
+            --set 'extraEnv[0].value=10.0.0.0/8\,172.16.0.0/12\,192.168.0.0/16' \
+            --set 'extraEnv[1].name=TOKENHUB_METRICS_ENABLED' \
+            --set-string 'extraEnv[1].value=true' \
+            --set podMonitor.enabled=true \
+            > /tmp/tokenhub-monitoring.yaml
+          monitoring_rendered="$(cat /tmp/tokenhub-monitoring.yaml)"
+          grep -Fq 'kind: PodMonitor' <<<"$monitoring_rendered"
+          grep -Fq 'name: TOKENHUB_TRUSTED_PROXY_CIDRS' <<<"$monitoring_rendered"
+          grep -Fq 'value: 10.0.0.0/8,172.16.0.0/12,192.168.0.0/16' <<<"$monitoring_rendered"
+          grep -Fq 'name: TOKENHUB_METRICS_ENABLED' <<<"$monitoring_rendered"
+          grep -Fq 'value: "true"' <<<"$monitoring_rendered"
+
+          # Overlap-capable configurations fail closed until the operator pins
+          # an image with instance-scoped image-job recovery (the published
+          # 0.8.0 image predates it) and confirms it: the 0.8.0 image marks
+          # every unfinished image job in the shared database as failed when
+          # any replica starts or stops, including jobs running on a live
+          # peer.
+          if helm template tokenhub deploy/helm/tokenhub \
+            --set secretEnv.TOKENHUB_SECRET_KEY=ssssssssssssssssssssssssssssssss \
+            --set secretEnv.TOKENHUB_BOOTSTRAP_ADMIN_PASSWORD=bootstrap-password \
+            --set database.existingSecret=tokenhub-database \
+            --set replicaCount=2 \
+            > /dev/null 2>&1; then
+            echo "chart rendered replicaCount=2 without instance-scoped recovery confirmation" >&2
+            exit 1
+          fi
+          if helm template tokenhub deploy/helm/tokenhub \
+            --set secretEnv.TOKENHUB_SECRET_KEY=ssssssssssssssssssssssssssssssss \
+            --set secretEnv.TOKENHUB_BOOTSTRAP_ADMIN_PASSWORD=bootstrap-password \
+            --set database.existingSecret=tokenhub-database \
+            --set strategy=RollingUpdate \
+            > /dev/null 2>&1; then
+            echo "chart rendered strategy=RollingUpdate without instance-scoped recovery confirmation" >&2
+            exit 1
+          fi
+
+          # With the confirmation, multi-replica and RollingUpdate renders
+          # succeed and carry the expected scheduling fields.
+          helm template tokenhub deploy/helm/tokenhub \
+            --set secretEnv.TOKENHUB_SECRET_KEY=ssssssssssssssssssssssssssssssss \
+            --set secretEnv.TOKENHUB_BOOTSTRAP_ADMIN_PASSWORD=bootstrap-password \
+            --set database.existingSecret=tokenhub-database \
+            --set replicaCount=2 \
+            --set confirmInstanceScopedRecovery=true \
+            > /tmp/tokenhub-multireplica.yaml
+          grep -Fq 'replicas: 2' /tmp/tokenhub-multireplica.yaml
+          grep -Fq 'type: Recreate' /tmp/tokenhub-multireplica.yaml
+          helm template tokenhub deploy/helm/tokenhub \
+            --set secretEnv.TOKENHUB_SECRET_KEY=ssssssssssssssssssssssssssssssss \
+            --set secretEnv.TOKENHUB_BOOTSTRAP_ADMIN_PASSWORD=bootstrap-password \
+            --set database.existingSecret=tokenhub-database \
+            --set strategy=RollingUpdate \
+            --set confirmInstanceScopedRecovery=true \
+            > /tmp/tokenhub-rollingupdate.yaml
+          grep -Fq 'type: RollingUpdate' /tmp/tokenhub-rollingupdate.yaml
+          grep -Fq 'maxUnavailable: 0' /tmp/tokenhub-rollingupdate.yaml
+          grep -Fq 'maxSurge: 1' /tmp/tokenhub-rollingupdate.yaml
+
+          # Required values fail closed instead of installing placeholders.
+          if helm template tokenhub deploy/helm/tokenhub >/dev/null 2>&1; then
+            echo "chart rendered without required credentials and database URL" >&2
+            exit 1
+          fi
+
+  repo-gates:
+    name: Repository gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          # The translation gate diffs the event's base against its head, so the full
+          # history has to be present. With the default shallow fetch it fails closed.
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+
+      - name: Test the gates
+        run: node --test tools/*.test.mjs
+
+      - name: Check documentation translations
+        run: node tools/check-doc-translations.mjs
+
+      - name: Check UI translations
+        run: node tools/check-ui-translations.mjs
+
+      - name: Check environment variable contract
+        run: node tools/check-env-contract.mjs
+
+      - name: Check source file sizes
+        run: node tools/check-source-lines.mjs
+
+      - name: Check for whitespace errors
+        env:
+          # merge_group carries neither of the first two, and a newly created branch
+          # reports an all-zero before, so the base is resolved rather than assumed.
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${BASE_SHA}" || "${BASE_SHA}" =~ ^0+$ ]]; then
+            echo "No usable base commit for this event; skipping the whitespace check."
+            exit 0
+          fi
+          git diff --check "${BASE_SHA}" HEAD
+
+  ci:
+    name: CI
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # A single stable check for branch protection to require. Without it, protecting
+    # separately named jobs means editing the rule every time a job is added.
+    needs:
+      - backend
+      - backend-postgres
+      - backend-db-n1
+      - plugin-devkit
+      - frontend
+      - deployment
+      - repo-gates
+    if: always()
+    steps:
+      - name: Verify every job succeeded
+        env:
+          EXPECTED_JOBS: 7
+        run: |
+          set -euo pipefail
+          results='${{ join(needs.*.result, ' ') }}'
+          echo "Job results: $results"
+
+          # An empty or short list would otherwise pass vacuously, which is the one
+          # way a required check can go green while nothing actually ran. Keep this
+          # count in step with the needs: list above.
+          count="$(echo $results | wc -w)"
+          if [[ "$count" -ne "$EXPECTED_JOBS" ]]; then
+            echo "Expected $EXPECTED_JOBS job results but saw $count." >&2
+            exit 1
+          fi
+
+          for result in $results; do
+            if [[ "$result" != "success" ]]; then
+              echo "A required job did not succeed." >&2
+              exit 1
+            fi
+          done
