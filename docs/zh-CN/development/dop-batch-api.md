@@ -11,19 +11,20 @@ go run ./cmd/tokenhub-dop
 构建独立入口：
 
 ```sh
-go build -ldflags "-X main.buildVersion=0.9.2" -o ../.artifacts/tokenhub-dop ./cmd/tokenhub-dop
+go build -ldflags "-X main.buildVersion=0.9.3" -o ../.artifacts/tokenhub-dop ./cmd/tokenhub-dop
 ```
 
 新增入口保留原版启动校验、迁移/回滚保护、初始化、数据库 CLI、目录与账单任务、优雅退出，仅在组装时调用 `Server.DOPBatchHandler()`。原入口、`Server.Handler()`、路由、原有模型、环境模板和前端文件均不修改，原接口继续可用。入口对齐测试会在上游启动流程变化时失败，届时只同步新增入口。仅新增文件可以避免文本冲突，但升级后仍须验证兼容性。
 
-扩展启动时只新增数据库表 `dop_batch_receipts`（加密重放记录）和 `dop_batch_status_marks`（停用来源标记），不修改原有表和迁移清单。备份应覆盖扩展表；原版按模型导出的 JSON 不包含本扩展的重放记录和恢复标记。生产发布前按部署流程备份及评审；回退时使用原版入口，扩展表可以保留且不会生效。本次开发不自动部署共享服务器。
+扩展启动时只新增数据库表 `dop_batch_receipts`（加密重放记录）、`dop_batch_status_marks`（停用来源标记）和 `dop_oauth_identities`（员工 OAuth 身份绑定），不修改原有表和迁移清单。备份应覆盖扩展表；原版按模型导出的 JSON 不包含本扩展的重放记录、恢复标记和 OAuth 身份绑定。生产发布前按部署流程备份及评审；已有仅 OAuth 员工时，回退仍须保留 DOP 入口和身份保护；原版入口不执行员工的本地密码限制。不得让两个入口同时访问同一个受管数据库。本次开发不自动部署共享服务器。
 
 ## 接口与处理规则
 
-六个接口均使用 POST：
+七个接口均使用 POST：
 
 | `/api/admin/dop/batch/` 后的路径 | 用途 |
 | --- | --- |
+| `users/provision` | 批量预建仅 OAuth 员工，每人原子创建账号、月额度和 Key |
 | `users/usage` | 指定人员集合的本日/本月已用及可选剩余额度 |
 | `user-quotas` | 批量创建/调整人员月额度策略 |
 | `team-budgets` | 批量创建/调整二级单位 Team 预算 |

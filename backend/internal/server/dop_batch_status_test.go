@@ -82,7 +82,7 @@ func TestDOPBatchRestrictsSessionsToPlatformAdministrators(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		for _, path := range []string{"users/usage", "user-quotas", "team-budgets", "projects/status", "api-keys/status", "api-keys/create"} {
+		for _, path := range []string{"users/usage", "user-quotas", "team-budgets", "projects/status", "api-keys/status", "api-keys/create", "users/provision"} {
 			r := httptest.NewRequest(http.MethodPost, "/api/admin/dop/batch/"+path, strings.NewReader(`{"items":[]}`))
 			r.Header.Set("Authorization", "Bearer "+session.Token)
 			w := httptest.NewRecorder()

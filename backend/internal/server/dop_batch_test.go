@@ -17,7 +17,7 @@ import (
 func newDOPBatchTestServer(t *testing.T) (*GormStore, *Server, http.Handler) {
 	t.Helper()
 	store := NewMemoryStore()
-	admin := AdminUser{ID: "dop-admin", Username: "dop-admin", Email: "admin@example.test", Role: "admin", Status: StatusActive}
+	admin := AdminUser{ID: "dop-admin", Username: "dop-admin", Email: "admin@example.test", Role: "admin", Status: StatusActive, CreatedAt: time.Now().UTC()}
 	if err := store.db.Create(&admin).Error; err != nil {
 		t.Fatal(err)
 	}

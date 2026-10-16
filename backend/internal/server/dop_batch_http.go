@@ -17,12 +17,13 @@ func (s *Server) DOPBatchHandler() (http.Handler, error) {
 	if !ok {
 		return nil, fmt.Errorf("DOP batch API requires a GormStore")
 	}
-	if err := store.db.AutoMigrate(&dopBatchReceipt{}, &dopBatchStatusMark{}); err != nil {
+	if err := store.db.AutoMigrate(&dopBatchReceipt{}, &dopBatchStatusMark{}, &dopOAuthIdentity{}); err != nil {
 		return nil, fmt.Errorf("initialize DOP batch tables: %w", err)
 	}
 	api := &dopBatchAPI{server: s, store: store}
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/admin/dop/batch/", api.serveHTTP)
+	api.registerIdentityRoutes(mux)
 	mux.Handle("/", s.mux)
 	return s.withPluginRuntimeSnapshot(s.cors(mux)), nil
 }
@@ -69,7 +70,7 @@ func (api *dopBatchAPI) serveHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	switch operation {
-	case "user-quotas", "team-budgets", "projects/status", "api-keys/status", "api-keys/create":
+	case "user-quotas", "team-budgets", "projects/status", "api-keys/status", "api-keys/create", "users/provision":
 	default:
 		writeError(w, r, NewHTTPError(404, "not_found", "Not found"))
 		return
@@ -89,6 +90,14 @@ func (api *dopBatchAPI) serveHTTP(w http.ResponseWriter, r *http.Request) {
 	if err := validateDOPBatchItems(request.Items); err != nil {
 		writeError(w, r, err)
 		return
+	}
+	if operation == "users/provision" {
+		var err error
+		r, err = api.provisionPreflight(r)
+		if err != nil {
+			writeError(w, r, dopBatchSafeError(err))
+			return
+		}
 	}
 	results := make([]dopBatchResult, 0, len(request.Items))
 	succeeded, pending, failed := 0, 0, 0
@@ -141,6 +150,10 @@ func validateDOPBatchItems(items []dopBatchItem) error {
 // An item executes on a transaction-scoped store using the original handlers.
 // No loopback HTTP, token forwarding, or bypass of approval/audit behavior occurs.
 func (api *dopBatchAPI) dispatch(s *Server, w http.ResponseWriter, r *http.Request, user AdminUser, operation string, item dopBatchItem) {
+	if operation == "users/provision" {
+		s.serveDOPProvision(w, r, user, item)
+		return
+	}
 	if operation == "user-quotas" || operation == "team-budgets" {
 		s.serveDOPBatchResource(w, r, user, operation, item)
 		return

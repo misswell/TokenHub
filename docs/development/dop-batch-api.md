@@ -11,17 +11,18 @@ go run ./cmd/tokenhub-dop
 For a release build:
 
 ```sh
-go build -ldflags "-X main.buildVersion=0.9.2" -o ../.artifacts/tokenhub-dop ./cmd/tokenhub-dop
+go build -ldflags "-X main.buildVersion=0.9.3" -o ../.artifacts/tokenhub-dop ./cmd/tokenhub-dop
 ```
 
 The new `cmd/tokenhub-dop` preserves upstream startup validation, migration/rollback guard, bootstrap, database CLI, catalog/billing startup and graceful shutdown. Only its composition calls `Server.DOPBatchHandler()`. Original `cmd/tokenhub`, `Server.Handler()`, routes, models, environment templates and frontend are unchanged. Existing routes still work. The entrypoint parity test detects upstream startup drift; update the added entrypoint when that test fails after an upstream merge. Add-only files avoid textual conflicts but still require compatibility checks after upgrades.
 
-Opt-in startup creates **only two extension tables**, `dop_batch_receipts` and `dop_batch_status_marks`, in the native database. Existing tables and migration manifests are not changed. Use a full database backup that includes these extension tables: the native model-based JSON export does not include extension receipts or restore markers. Back up the database and review normal deployment procedures before production rollout. Rollback uses the original binary; extension tables are inert and can be retained. This repository change does not deploy a shared server or change its configuration.
+Opt-in startup creates **only three extension tables**, `dop_batch_receipts`, `dop_batch_status_marks` and `dop_oauth_identities`, in the native database. Existing tables and migration manifests are not changed. Use a full database backup that includes these extension tables: the native model-based JSON export does not include extension receipts, restore markers or OAuth identity bindings. Back up the database and review normal deployment procedures before production rollout. For managed OAuth employees, retain the DOP entrypoint and identity guards during rollback; the original binary does not enforce their local-password policy. Never expose both entrypoints against the same managed database. This repository change does not deploy a shared server or change its configuration.
 
 ## Contract and processing
 
 | Route after `/api/admin/dop/batch/` | Purpose |
 | --- | --- |
+| `users/provision` | Create OAuth-only employees with monthly quotas and Keys atomically per employee |
 | `users/usage` | Explicit user collection, current-day/month native use and optional remaining amount |
 | `user-quotas` | Create/update individual User monthly policies |
 | `team-budgets` | Create/update Team budgets |
@@ -43,9 +44,11 @@ Results are encrypted using the native `TOKENHUB_SECRET_KEY`, including Key plai
 
 DOP persists business targets, allocation ledger and sync status first, then calls these APIs and records each item result. Remaining amounts are computed from DOP's configured targets, not from a mutable TokenHub wallet. Save policy/budget/Key IDs. Positive amount changes retain current-month use. To update an existing resource use PATCH with its ID; do not POST duplicate policies for the same employee.
 
+OAuth-only employee provisioning and its full request example are documented in [DOP OAuth provisioning](dop-oauth-provisioning.md). It skips bcrypt, binds the exact provider/subject and guards local password operations only for managed employees.
+
 ## HTTP examples
 
-All six routes use **POST** and platform administrator authentication. Write routes also require an `Idempotency-Key`; `users/usage` does not. Replace the URL, token, IDs and amounts. Amounts are **USD**; `1 USD = R 三局豆` conversion belongs to DOP. Examples below are protocol examples, not commands already executed.
+All seven routes use **POST** and platform administrator authentication. Write routes also require an `Idempotency-Key`; `users/usage` does not. Replace the URL, token, IDs and amounts. Amounts are **USD**; `1 USD = R 三局豆` conversion belongs to DOP. Examples below are protocol examples, not commands already executed.
 
 ```http
 POST http://localhost:8080/api/admin/dop/batch/users/usage HTTP/1.1

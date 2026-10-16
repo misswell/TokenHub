@@ -11,16 +11,16 @@ go run ./cmd/tokenhub-dop
 ビルド例：
 
 ```sh
-go build -ldflags "-X main.buildVersion=0.9.2" -o ../.artifacts/tokenhub-dop ./cmd/tokenhub-dop
+go build -ldflags "-X main.buildVersion=0.9.3" -o ../.artifacts/tokenhub-dop ./cmd/tokenhub-dop
 ```
 
 追加エントリーポイントは起動検証、移行/ロールバック保護、初期化、DB CLI、カタログと課金処理、正常終了を維持し、構成時のみ `Server.DOPBatchHandler()` を呼び出します。既存の入口、`Server.Handler()`、ルート、モデル、環境テンプレート、フロントエンドは変更しません。上流の起動処理が変わると入口整合テストが失敗するため、追加ファイルを同期してください。テキスト競合がなくてもアップグレード後の互換性確認は必要です。
 
-有効化時に追加するテーブルは `dop_batch_receipts` と `dop_batch_status_marks` のみです。既存テーブルや移行マニフェストは変更しません。拡張テーブルを含むDB全体をバックアップしてください。元のモデルベースJSONエクスポートは拡張の再実行記録と復元マーカーを含みません。本番投入前に通常のバックアップとレビューを行ってください。元の入口へ戻すと拡張は無効になり、追加テーブルは残しておけます。この開発作業では共有サーバーへ配置しません。
+有効化時に追加するテーブルは `dop_batch_receipts`、`dop_batch_status_marks`、`dop_oauth_identities` のみです。既存テーブルや移行マニフェストは変更しません。拡張テーブルを含むDB全体をバックアップしてください。元のモデルベースJSONエクスポートは拡張の再実行記録、復元マーカー、OAuth IDバインドを含みません。本番投入前に通常のバックアップとレビューを行ってください。OAuth専用従業員が存在する場合、ロールバック時もDOP入口と認証保護を維持してください。元の入口はローカルパスワード制限を適用しません。同じ管理DBに両入口を公開しないでください。この開発作業では共有サーバーへ配置しません。
 
 ## 動作と安全性
 
-以下の6ルートはすべて `/api/admin/dop/batch/` 配下のPOSTです：`users/usage`、`user-quotas`、`team-budgets`、`projects/status`、`api-keys/status`、`api-keys/create`。
+以下の7ルートはすべて `/api/admin/dop/batch/` 配下のPOSTです：`users/provision`、`users/usage`、`user-quotas`、`team-budgets`、`projects/status`、`api-keys/status`、`api-keys/create`。
 
 ネイティブの `admin` / `system_admin` のみ利用でき、`Authorization: Bearer <PLATFORM_ADMIN_TOKEN>` または同等の管理者セッションが必要です。一般ユーザー、Team Leader、security_admin、分析トークン、モデルKeyは利用できません。DOPは実際の操作者の組織権限を別途検証し、認証情報をブラウザーに渡さないでください。
 
@@ -38,9 +38,11 @@ DOPは目標、割当台帳、同期状態を先に保存し、その後USDに�
 
 以下の共通プロトコル説明と完全な例は英語です。照会の `monthly_limit_usd` はDOP目標のUSD換算値で、余量計算専用、保存しません。省略すると余量も省略します。Keyの所有者は実際の従業員です。0は利用拒否を意味しないため停止APIを使います。拡張自身が停止し、その後変更のないリソースだけ復元でき、手動停止、期限切れ、ローテーション済みKeyは復元しません。Project設定は維持します。
 
+OAuth専用従業員の完全な作成例と承認処理は [DOP OAuthプロビジョニング](dop-oauth-provisioning.md) を参照してください。bcryptを省略し、提供元とsubで結び付け、管理対象従業員のローカルパスワード操作を制限します。
+
 ## HTTP examples
 
-All six routes use **POST** and platform administrator authentication. Write routes also require an `Idempotency-Key`; `users/usage` does not. Replace the URL, token, IDs and amounts. Amounts are **USD**; `1 USD = R 三局豆` conversion belongs to DOP. Examples below are protocol examples, not commands already executed.
+All seven routes use **POST** and platform administrator authentication. Write routes also require an `Idempotency-Key`; `users/usage` does not. Replace the URL, token, IDs and amounts. Amounts are **USD**; `1 USD = R 三局豆` conversion belongs to DOP. Examples below are protocol examples, not commands already executed.
 
 ```http
 POST http://localhost:8080/api/admin/dop/batch/users/usage HTTP/1.1
