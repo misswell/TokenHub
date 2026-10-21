@@ -9,6 +9,11 @@ import (
 	"strings"
 )
 
+var keyFieldsAllowed = map[string]bool{
+	"name": true, "group": true, "allowed_models": true, "model_access_mode": true,
+	"ip_allowlist": true, "limits": true, "rate_limit_rpm": true, "token_limit_tpm": true, "expires_at": true,
+}
+
 func (s *GormStore) validateDOPProvision(server *Server, r *http.Request, item dopBatchItem) (dopProvisionRequest, map[string]any, error) {
 	var req dopProvisionRequest
 	invalid := func(message string) (dopProvisionRequest, map[string]any, error) {
@@ -70,9 +75,8 @@ func (s *GormStore) validateDOPProvision(server *Server, r *http.Request, item d
 	if err := json.Unmarshal(req.Key, &key); err != nil || key == nil {
 		return invalid("key must be an object containing native Key creation parameters")
 	}
-	allowed := map[string]bool{"name": true, "group": true, "allowed_models": true, "model_access_mode": true, "ip_allowlist": true, "limits": true, "rate_limit_rpm": true, "token_limit_tpm": true, "expires_at": true}
 	for field := range key {
-		if !allowed[field] {
+		if !keyFieldsAllowed[field] {
 			return invalid("Unknown or protected Key field: " + field)
 		}
 	}

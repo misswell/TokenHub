@@ -130,7 +130,13 @@ func (s *GormStore) dopBatchStatusAuditID(kind, id string) (string, error) {
 
 func (s *Server) dopBatchStatusObject(project bool, id string) (any, string, error) {
 	if project {
-		value, err := s.findProject(id)
+		store := s.store.(*GormStore)
+		var value Project
+		if err := store.db.First(&value, "id = ?", id).Error; err != nil {
+			return value, "", notFound(err, "project_not_found", "Project not found")
+		}
+		hydrateProject(&value)
+		err := store.loadProjectTeams(&value)
 		return value, value.Status, err
 	}
 	value, err := s.findAPIKey(id)

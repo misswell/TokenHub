@@ -53,25 +53,13 @@ func (api *dopBatchAPI) serveConcurrent(w http.ResponseWriter, r *http.Request, 
 		api.writeConcurrentError(w, r, err, parent)
 		return
 	}
-	succeeded, pending, failed := 0, 0, 0
 	for i := range results {
 		results[i].ClientRef = items[i].ClientRef
-		switch results[i].State {
-		case "succeeded":
-			succeeded++
-		case "pending":
-			pending++
-		default:
-			failed++
-		}
 	}
-	status := http.StatusOK
-	if failed+pending > 0 {
-		status = http.StatusMultiStatus
-	}
-	writeJSON(w, status, map[string]any{"data": results, "total": len(results), "succeeded": succeeded, "pending": pending, "failed": failed,
-		"execution": map[string]any{"requested_concurrency": workers, "concurrency": workers, "mode": "concurrent", "global_limit": e.capacity,
-			"parallel_provision": operation == "users/provision" && !e.options.DisableParallelProvision}})
+	execution := map[string]any{"requested_concurrency": workers, "concurrency": workers, "mode": "concurrent", "global_limit": e.capacity,
+		"parallel_provision": operation == "users/provision" && !e.options.DisableParallelProvision}
+	status, envelope := dopBatchSummary(results, execution)
+	writeJSON(w, status, envelope)
 }
 
 func (api *dopBatchAPI) writeConcurrentError(w http.ResponseWriter, r *http.Request, err error, parent context.Context) {

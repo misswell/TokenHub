@@ -15,8 +15,8 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-// Only extension tables are migrated by DOPBatchHandler. Native models and
-// migrations are unchanged. Tombstones prevent an expired key from recreating work.
+// Native models and migration manifests are unchanged. Tombstones prevent an
+// expired key from recreating work.
 type dopBatchReceipt struct {
 	ID          string `gorm:"primaryKey"`
 	Fingerprint string
@@ -73,6 +73,11 @@ func (api *dopBatchAPI) executeItemAttempt(r *http.Request, user AdminUser, oper
 		if err != nil {
 			return err
 		}
+		var audited *dopProvisionStore
+		if view, ok := lookupStore.(*dopBatchLookupStore); ok {
+			audited = &dopProvisionStore{dopBatchLookupStore: view}
+			lookupStore = audited
+		}
 		s := &Server{store: lookupStore, config: api.server.config}
 		child := r.Clone(r.Context())
 		child.Body = io.NopCloser(bytes.NewReader(item.Body))
@@ -88,6 +93,11 @@ func (api *dopBatchAPI) executeItemAttempt(r *http.Request, user AdminUser, oper
 		if result.Status >= 400 || result.Status == 0 {
 			itemError = errors.New("batch item rejected")
 			return itemError // Roll back any partial native writes for this item.
+		}
+		if audited != nil {
+			if err := audited.checkAudit(0); err != nil {
+				return err
+			}
 		}
 		result.State = "succeeded"
 		if result.Status == http.StatusAccepted {

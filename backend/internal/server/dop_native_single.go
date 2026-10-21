@@ -9,11 +9,14 @@ import (
 	"unicode/utf8"
 )
 
-// Native paths retain their original behavior unless a platform administrator
-// explicitly opts into durable DOP single-item semantics. No one-item batch HTTP
-// request is made: the original handlers run in the receipt transaction.
+// The DOP entrypoint adds exact-ID quota reads. Durable single-item writes still
+// require a platform administrator to opt in explicitly; the original handlers
+// run in the receipt transaction without a one-item batch HTTP request.
 func (api *dopBatchAPI) nativeSingleHandler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if api.serveDOPQuotaPolicyIDQuery(w, r) {
+			return
+		}
 		capability := r.URL.Path == "/api/admin/dop/capabilities"
 		if !capability && r.Header.Get("X-DOP-Operation") != "true" {
 			next.ServeHTTP(w, r)
@@ -46,7 +49,12 @@ func (api *dopBatchAPI) nativeSingleHandler(next http.Handler) http.Handler {
 			return
 		}
 		if operation == "native/quotas-info" {
-			writeJSON(w, 200, map[string]any{"data": api.store.ListResources("quota-policies")})
+			items, err := api.dopQuotaPolicyQuery(r)
+			if err != nil {
+				writeError(w, r, err)
+				return
+			}
+			writeJSON(w, 200, map[string]any{"data": items})
 			return
 		}
 		if operation == "native/keys-info" {
@@ -96,7 +104,11 @@ func (api *dopBatchAPI) nativeSingleHandler(next http.Handler) http.Handler {
 			return
 		}
 		result := api.executeItem(r, actor, operation, key, item)
-		w.Header().Set("X-DOP-Replayed", map[bool]string{true: "true", false: "false"}[result.Replayed])
+		if result.Replayed {
+			w.Header().Set("X-DOP-Replayed", "true")
+		} else {
+			w.Header().Set("X-DOP-Replayed", "false")
+		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(result.Status)
 		var encoded bytes.Buffer

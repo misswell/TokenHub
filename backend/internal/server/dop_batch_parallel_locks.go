@@ -15,8 +15,14 @@ func dopBatchParallel(ctx context.Context) (dopBatchParallelMode, bool) {
 
 // Lock before item-scoped lookups cache the old Fields value.
 func (s *GormStore) lockDOPBatchTarget(ctx context.Context, operation string, item dopBatchItem) error {
-	if _, ok := dopBatchParallel(ctx); !ok || s.dbDriver != "postgres" {
+	if s.dbDriver != "postgres" {
 		return nil
+	}
+	switch operation {
+	case "native/resource/quota-policies":
+		operation = "user-quotas"
+	case "native/resource/budgets":
+		operation = "team-budgets"
 	}
 	if (operation == "user-quotas" || operation == "team-budgets") && item.ID != "" {
 		kind := "quota-policies"
@@ -28,7 +34,7 @@ func (s *GormStore) lockDOPBatchTarget(ctx context.Context, operation string, it
 			return notFound(err, "resource_not_found", "Resource not found")
 		}
 	}
-	if operation == "api-keys/create" {
+	if _, parallel := dopBatchParallel(ctx); parallel && operation == "api-keys/create" {
 		var body struct {
 			ProjectID string `json:"project_id"`
 		}

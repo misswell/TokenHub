@@ -26,6 +26,9 @@ func (s *Server) DOPBatchHandlerWithOptions(options DOPBatchOptions) (http.Handl
 	if err := store.db.AutoMigrate(&dopBatchReceipt{}, &dopBatchStatusMark{}, &dopOAuthIdentity{}); err != nil {
 		return nil, fmt.Errorf("initialize DOP batch tables: %w", err)
 	}
+	if err := initializeDOPBatchIndex(store.db); err != nil {
+		return nil, fmt.Errorf("initialize DOP quota lookup index: %w", err)
+	}
 	executor, err := newDOPBatchExecutor(store, options)
 	if err != nil {
 		return nil, err
@@ -125,13 +128,27 @@ func (api *dopBatchAPI) serveHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	results := make([]dopBatchResult, 0, len(request.Items))
-	succeeded, pending, failed := 0, 0, 0
 	for _, item := range request.Items {
 		if r.Context().Err() != nil {
 			return // Committed items are recoverable with the same key and refs.
 		}
-		result := api.executeItem(r, user, operation, key, item)
-		switch result.State {
+		results = append(results, api.executeItem(r, user, operation, key, item))
+	}
+	var execution map[string]any
+	if request.Concurrency != nil {
+		execution = map[string]any{"requested_concurrency": *request.Concurrency, "concurrency": 1, "mode": "serial"}
+	}
+	status, envelope := dopBatchSummary(results, execution)
+	writeJSON(w, status, envelope)
+}
+
+// dopBatchSummary counts result states and builds the standard batch response
+// envelope shared by the serial and concurrent paths. execution is included
+// only when non-nil.
+func dopBatchSummary(results []dopBatchResult, execution map[string]any) (int, map[string]any) {
+	succeeded, pending, failed := 0, 0, 0
+	for i := range results {
+		switch results[i].State {
 		case "succeeded":
 			succeeded++
 		case "pending":
@@ -139,7 +156,6 @@ func (api *dopBatchAPI) serveHTTP(w http.ResponseWriter, r *http.Request) {
 		default:
 			failed++
 		}
-		results = append(results, result)
 	}
 	status := http.StatusOK
 	if failed+pending > 0 {
@@ -149,10 +165,10 @@ func (api *dopBatchAPI) serveHTTP(w http.ResponseWriter, r *http.Request) {
 		"data": results, "total": len(results), "succeeded": succeeded,
 		"pending": pending, "failed": failed,
 	}
-	if request.Concurrency != nil {
-		envelope["execution"] = map[string]any{"requested_concurrency": *request.Concurrency, "concurrency": 1, "mode": "serial"}
+	if execution != nil {
+		envelope["execution"] = execution
 	}
-	writeJSON(w, status, envelope)
+	return status, envelope
 }
 
 func validateDOPBatchItems(items []dopBatchItem) error {

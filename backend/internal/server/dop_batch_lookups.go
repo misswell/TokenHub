@@ -14,10 +14,14 @@ import (
 // remains native. Never use this view for general collection endpoints.
 type dopBatchLookupStore struct {
 	*GormStore
-	filterUsers bool
-	users       []AdminUser
-	kind        string
-	resources   []AdminResource
+	filterUsers    bool
+	users          []AdminUser
+	kind           string
+	resources      []AdminResource
+	filterTeams    bool
+	teams          []AdminResource
+	filterProjects bool
+	projects       []Project
 }
 
 func (s *dopBatchLookupStore) ListAdminUsers() []AdminUser {
@@ -28,10 +32,20 @@ func (s *dopBatchLookupStore) ListAdminUsers() []AdminUser {
 }
 
 func (s *dopBatchLookupStore) ListResources(kind string) []AdminResource {
+	if kind == "teams" && s.filterTeams {
+		return s.teams
+	}
 	if kind == s.kind {
 		return s.resources
 	}
 	return s.GormStore.ListResources(kind)
+}
+
+func (s *dopBatchLookupStore) ListProjects() []Project {
+	if s.filterProjects {
+		return s.projects
+	}
+	return s.GormStore.ListProjects()
 }
 
 func prepareDOPBatchLookups(store *GormStore, operation string, item dopBatchItem) (Store, error) {
@@ -53,6 +67,7 @@ func prepareDOPBatchLookups(store *GormStore, operation string, item dopBatchIte
 	}
 	view := &dopBatchLookupStore{GormStore: store, filterUsers: operation != "team-budgets"}
 	userID := body.OwnerUserID
+	teamID := stringField(body.Fields, "scope_id")
 	if operation == "user-quotas" {
 		userID = stringField(body.Fields, "scope_id")
 	}
@@ -72,6 +87,21 @@ func prepareDOPBatchLookups(store *GormStore, operation string, item dopBatchIte
 		view.resources = []AdminResource{resource}
 		if operation == "user-quotas" {
 			userID = stringField(resource.Fields, "scope_id")
+			// Approval association only needs to distinguish zero, one or
+			// multiple matching projects. Preserve the native trimmed match.
+			view.filterProjects = true
+			if err := store.db.Select("id", "default_quota_ref").
+				Where(dopQuotaRefExpression(store.db)+" = ?", resource.ID).Limit(2).Find(&view.projects).Error; err != nil {
+				return nil, err
+			}
+		} else {
+			teamID = stringField(resource.Fields, "scope_id")
+		}
+	}
+	if operation == "team-budgets" {
+		view.filterTeams = true
+		if err := store.db.Where("kind = ? AND id = ?", "teams", teamID).Find(&view.teams).Error; err != nil {
+			return nil, err
 		}
 	}
 	if view.filterUsers && userID != "" {
