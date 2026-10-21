@@ -11,6 +11,16 @@ tmp/
 output/
 artifacts/
 .tokenhub/
+/.artifacts/
+coverage/
+frontend/playwright-report/
+frontend/test-results/
+backend/tokenhub-dop
+*.prof
+*.tmp
+
+# Local documentation; existing tracked documentation remains versioned.
+/docs/
 
 # Internal design notes
 design/

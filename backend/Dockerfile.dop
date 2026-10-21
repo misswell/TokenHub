@@ -1,0 +1,39 @@
+# Runs the opt-in DOP entrypoint (cmd/tokenhub-dop) inside the published container
+# bundle. Build with backend/ as the context, then deploy with TOKENHUB_IMAGE_TAG:
+#   docker build -f backend/Dockerfile.dop \
+#     -t ghcr.io/astaxie/tokenhub-backend:dop-local backend
+#   TOKENHUB_IMAGE_TAG=dop-local docker compose -f deploy/docker-compose.yml up -d
+ARG BASE_IMAGE=ghcr.io/astaxie/tokenhub-backend:latest
+
+FROM golang:1.26-alpine AS dop-builder
+
+WORKDIR /src
+ARG GOPROXY=https://proxy.golang.org,direct
+ARG TOKENHUB_VERSION=0.9.0-dop
+ENV GOPROXY=$GOPROXY
+RUN apk add --no-cache gcc musl-dev
+COPY go.mod go.sum ./
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    go mod download
+COPY cmd ./cmd
+COPY internal ./internal
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=1 go build \
+      -tags "netgo osusergo" \
+      -trimpath \
+      -ldflags="-s -w -linkmode external -extldflags '-static' -X main.buildVersion=${TOKENHUB_VERSION} -X main.buildType=source -X main.deploymentType=container" \
+      -o /out/tokenhub ./cmd/tokenhub-dop
+
+FROM ${BASE_IMAGE}
+
+ARG TOKENHUB_VERSION=0.9.0-dop
+LABEL org.opencontainers.image.version="${TOKENHUB_VERSION}" \
+      org.opencontainers.image.title="TokenHub (DOP batch API entrypoint)"
+
+COPY --from=dop-builder --chown=node:node /out/tokenhub /usr/local/lib/tokenhub-image/bin/tokenhub
+RUN printf '%s\n' "$TOKENHUB_VERSION" >/usr/local/lib/tokenhub-image/VERSION && \
+    chmod 0755 /usr/local/lib/tokenhub-image/bin/tokenhub && \
+    tokenhub-build-id /usr/local/lib/tokenhub-image && \
+    chown node:node /usr/local/lib/tokenhub-image/BUILD_ID
