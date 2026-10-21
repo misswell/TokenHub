@@ -8,7 +8,6 @@ import (
 	"errors"
 	"io"
 	"net/http"
-	"sync"
 	"time"
 
 	"gorm.io/gorm"
@@ -64,12 +63,11 @@ func (api *dopBatchAPI) executeItemAttempt(r *http.Request, user AdminUser, oper
 		}
 		// GormStore contains pointer-owned synchronization. Give this transaction
 		// its own method mutex; the database provides cross-process receipt locks.
-		store := *api.store
-		store.db, store.mu = tx, &sync.Mutex{}
+		store := api.store.dopTransactionStore(tx)
 		if err := store.lockDOPBatchTarget(r.Context(), operation, item); err != nil {
 			return err
 		}
-		lookupStore, err := prepareDOPBatchLookups(&store, operation, item)
+		lookupStore, err := prepareDOPBatchLookups(store, operation, item)
 		if err != nil {
 			return err
 		}

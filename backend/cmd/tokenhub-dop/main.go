@@ -87,7 +87,7 @@ func main() {
 		log.Fatalf("record startup guard success: %v", err)
 	}
 
-	app := server.NewWithConfig(store, config)
+	app := server.NewWithConfigAndDependencies(store, config, server.ApplicationDependenciesForStore(store))
 	batchOptions, err := server.DOPBatchOptionsFromEnv()
 	if err != nil {
 		log.Fatal(err)

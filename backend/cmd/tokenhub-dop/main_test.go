@@ -17,7 +17,7 @@ func TestDOPEntrypointPreservesUpstreamStartup(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	expected := strings.Replace(string(upstream), "app := server.NewWithConfig(store, config)\n", "app := server.NewWithConfig(store, config)\n\tbatchOptions, err := server.DOPBatchOptionsFromEnv()\n\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n\thandler, err := app.DOPBatchHandlerWithOptions(batchOptions)\n\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n", 1)
+	expected := strings.Replace(string(upstream), "app := server.NewWithConfigAndDependencies(store, config, server.ApplicationDependenciesForStore(store))\n", "app := server.NewWithConfigAndDependencies(store, config, server.ApplicationDependenciesForStore(store))\n\tbatchOptions, err := server.DOPBatchOptionsFromEnv()\n\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n\thandler, err := app.DOPBatchHandlerWithOptions(batchOptions)\n\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n", 1)
 	expected = strings.Replace(expected, "Handler:           app.Handler(),", "Handler:           handler,", 1)
 	expected = strings.Replace(expected, "log.Printf(\"tokenhub backend listening on %s\", addr)", "log.Printf(\"tokenhub backend with DOP batch API listening on %s\", addr)", 1)
 	expected = strings.Replace(expected, "\tif err := srv.Shutdown(shutdownCtx);", "\tstopDOPBatchAdmission(handler)\n\tif err := srv.Shutdown(shutdownCtx);", 1)

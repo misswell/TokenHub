@@ -3,13 +3,13 @@
 #   docker build -f backend/Dockerfile.dop \
 #     -t ghcr.io/astaxie/tokenhub-backend:dop-local backend
 #   TOKENHUB_IMAGE_TAG=dop-local docker compose -f deploy/docker-compose.yml up -d
-ARG BASE_IMAGE=ghcr.io/astaxie/tokenhub-backend:latest
+ARG BASE_IMAGE=ghcr.io/astaxie/tokenhub-backend:0.10.0
 
 FROM golang:1.26-alpine AS dop-builder
 
 WORKDIR /src
 ARG GOPROXY=https://proxy.golang.org,direct
-ARG TOKENHUB_VERSION=0.9.0-dop
+ARG TOKENHUB_VERSION=0.10.0-dop
 ENV GOPROXY=$GOPROXY
 RUN apk add --no-cache gcc musl-dev
 COPY go.mod go.sum ./
@@ -28,7 +28,7 @@ RUN --mount=type=cache,target=/go/pkg/mod \
 
 FROM ${BASE_IMAGE}
 
-ARG TOKENHUB_VERSION=0.9.0-dop
+ARG TOKENHUB_VERSION=0.10.0-dop
 LABEL org.opencontainers.image.version="${TOKENHUB_VERSION}" \
       org.opencontainers.image.title="TokenHub (DOP batch API entrypoint)"
 
