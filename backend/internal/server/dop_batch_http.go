@@ -65,7 +65,7 @@ type dopBatchResult struct {
 func (api *dopBatchAPI) serveHTTP(w http.ResponseWriter, r *http.Request) {
 	// This service-to-service API deliberately requires a platform administrator.
 	// Staff and leaders continue using the existing scoped single-item endpoints.
-	user, ok := api.server.authorizeAdminUser(w, r)
+	user, ok := api.authorizeDOPAdminUser(w, r)
 	if !ok {
 		return
 	}

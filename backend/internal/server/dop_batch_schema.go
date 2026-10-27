@@ -16,5 +16,8 @@ func dopQuotaRefExpression(db *gorm.DB) string {
 }
 
 func initializeDOPBatchIndex(db *gorm.DB) error {
-	return db.Exec("CREATE INDEX IF NOT EXISTS idx_dop_projects_quota_ref ON projects (" + dopQuotaRefExpression(db) + ")").Error
+	if err := db.Exec("CREATE INDEX IF NOT EXISTS idx_dop_projects_quota_ref ON projects (" + dopQuotaRefExpression(db) + ")").Error; err != nil {
+		return err
+	}
+	return db.Exec("CREATE INDEX IF NOT EXISTS idx_dop_admin_users_created_at ON admin_users (created_at)").Error
 }

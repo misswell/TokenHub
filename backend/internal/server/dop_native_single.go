@@ -14,7 +14,7 @@ import (
 // run in the receipt transaction without a one-item batch HTTP request.
 func (api *dopBatchAPI) nativeSingleHandler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if api.serveDOPQuotaPolicyIDQuery(w, r) {
+		if api.serveDOPUserDelete(w, r) || api.serveDOPQuotaPolicyQuery(w, r) {
 			return
 		}
 		capability := r.URL.Path == "/api/admin/dop/capabilities"
@@ -27,7 +27,7 @@ func (api *dopBatchAPI) nativeSingleHandler(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 			return
 		}
-		actor, ok := api.server.authorizeAdminUser(w, r)
+		actor, ok := api.authorizeDOPAdminUser(w, r)
 		if !ok {
 			return
 		}
